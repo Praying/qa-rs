@@ -11,7 +11,11 @@ pub struct QADataStructStockDay {
 
 
 impl QADataStructStockDay {
-
+    pub fn new() -> Self {
+        Self {
+            data: df!([])
+        }
+    }
 
 
     pub fn load_singleday(date: &str) -> Self {
