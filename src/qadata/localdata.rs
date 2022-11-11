@@ -13,7 +13,7 @@ pub struct QADataStructStockDay {
 impl QADataStructStockDay {
     pub fn new() -> Self {
         Self {
-            data: df!([])
+            data: DataFrame::default(),
         }
     }
 

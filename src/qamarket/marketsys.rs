@@ -55,23 +55,23 @@ impl QAMarket {
             }
         }
         self.Data = data;
-        let usedata = data.select(codesub.into_iter().collect());
+        let usedata = self.Data.select(codesub.into_iter().collect());
         println!("usedata: {:?}", usedata);
     }
 
-    pub fn target_weight(
-        &mut self,
-        account_name: &str,
-        targetpanel: HashMap<String, f64>,
-        model: &str,
-    ) {
-        if self.RegAccount.contains_key(account_name) {
-            let acc = self.get_account(account_name);
-            match model {
-                "twap_30" => {
-                    let datacolumn = self.Data.data.select(["order_book_id", "twap_30"]);
-                }
-            }
-        }
-    }
+    // pub fn target_weight(
+    //     &mut self,
+    //     account_name: &str,
+    //     targetpanel: HashMap<String, f64>,
+    //     model: &str,
+    // ) {
+    //     if self.RegAccount.contains_key(account_name) {
+    //         let acc = self.get_account(account_name);
+    //         match model {
+    //             "twap_30" => {
+    //                 let datacolumn = self.Data.data.select(["order_book_id", "twap_30"]);
+    //             }
+    //         }
+    //     }
+    // }
 }

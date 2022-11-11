@@ -5,3 +5,4 @@ pub mod qalog;
 pub mod qautil;
 pub mod qadata;
 pub mod qamarket;
+pub mod qaconnector;
