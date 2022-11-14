@@ -1132,6 +1132,123 @@ impl QA_Account {
         let order = self.buy(code, amount, time, price);
         Ok(order.unwrap().order_id)
     }
+    #[pyo3(name = "sell")]
+    pub fn py_sell(&mut self, code: &str, amount: f64, time: &str, price: f64) -> PyResult<String> {
+        let order = self.sell(code, amount, time, price);
+        Ok(order.unwrap().order_id)
+    }
+    #[pyo3(name = "buy_open")]
+    pub fn py_buyopen(
+        &mut self,
+        code: &str,
+        amount: f64,
+        time: &str,
+        price: f64,
+    ) -> PyResult<String> {
+        let order = self.buy_open(code, amount, time, price);
+        Ok(order.unwrap().order_id)
+    }
+    #[pyo3(name = "buy_close")]
+    pub fn py_buyclose(
+        &mut self,
+        code: &str,
+        amount: f64,
+        time: &str,
+        price: f64,
+    ) -> PyResult<String> {
+        let order = self.buy_close(code, amount, time, price);
+        Ok(order.unwrap().order_id)
+    }
+    #[pyo3(name = "buy_closetoday")]
+    pub fn py_buyclosetoday(
+        &mut self,
+        code: &str,
+        amount: f64,
+        time: &str,
+        price: f64,
+    ) -> PyResult<String> {
+        let order = self.buy_closetoday(code, amount, time, price);
+        Ok(order.unwrap().order_id)
+    }
+
+    #[pyo3(name = "sell_open")]
+    pub fn py_sellopen(
+        &mut self,
+        code: &str,
+        amount: f64,
+        time: &str,
+        price: f64,
+    ) -> PyResult<String> {
+        let order = self.sell_open(code, amount, time, price);
+        Ok(order.unwrap().order_id)
+    }
+    #[pyo3(name = "sell_close")]
+    pub fn py_sellclose(
+        &mut self,
+        code: &str,
+        amount: f64,
+        time: &str,
+        price: f64,
+    ) -> PyResult<String> {
+        let order = self.sell_close(code, amount, time, price);
+        Ok(order.unwrap().order_id)
+    }
+    #[pyo3(name = "sell_closetoday")]
+    pub fn py_sellclosetoday(
+        &mut self,
+        code: &str,
+        amount: f64,
+        time: &str,
+        price: f64,
+    ) -> PyResult<String> {
+        let order = self.sell_closetoday(code, amount, time, price);
+        Ok(order.unwrap().order_id)
+    }
+
+    #[pyo3(name = "settle")]
+    pub fn py_settle(&mut self) {
+        self.settle()
+    }
+
+    #[pyo3(name = "on_pricechange")]
+    pub fn py_on_price_change(&mut self, code: &str, price: f64, datetime: &str) {
+        self.on_price_change(code.to_string(), price, datetime.to_string())
+    }
+
+    #[pyo3(name = "get_closeprofit")]
+    pub fn py_getcloseprofit(&mut self) -> PyResult<f64> {
+        Ok(self.get_closeprofit())
+    }
+
+    #[pyo3(name = "get_floatprofit")]
+    pub fn py_getfloatprofit(&mut self) -> PyResult<f64> {
+        Ok(self.get_floatprofit())
+    }
+
+    #[pyo3(name = "set_time")]
+    pub fn py_settime(&mut self, time: &str) {
+        self.time = time.to_string()
+    }
+
+    #[pyo3(name = "get_positions")]
+    pub fn py_getpositions(&mut self) -> PyResult<String>{
+        let v = serde_json::to_string(&self.hold).unwrap();
+        Ok(v)
+    }
+
+    #[pyo3(name = "get_position")]
+    pub fn py_get_qifi_position(&mut self, code:&str) -> PyResult<String>{
+        let pos = self.get_position(code).unwrap();
+        let v = serde_json::to_string(&pos.get_qifi_position()).unwrap();
+        Ok(v)
+    }
+
+    #[pyo3(name = "get_account")]
+    pub fn py_get_qifi_account(&mut self) -> PyResult<String>{
+        let accmsg = self.get_accountmessage();
+        let v = serde_json::to_string(&accmsg).unwrap();
+        Ok(v)
+    }
 }
 
 #[cfg(test)]
