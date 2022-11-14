@@ -548,6 +548,16 @@ impl QA_Account {
         Ok(())
     }
 
+    pub fn split_event(&mut self, code: &str, amount: f64){
+        // 送转股事件
+        let pos = self.get_position(code).unwrap();
+        pos.split_event(amount);
+    }
+
+    pub fn dividend_event(&mut self, money: f64){
+        // 分红事件
+        self.money += money;
+    }
     /// order about
     /// buy| sell| buy_open| sell_open| buy_close| sell_close|
     /// send_order
@@ -1248,6 +1258,16 @@ impl QA_Account {
         let accmsg = self.get_accountmessage();
         let v = serde_json::to_string(&accmsg).unwrap();
         Ok(v)
+    }
+
+    #[pyo3(name = "split_event")]
+    pub fn py_splitevent(&mut self, code: &str, amount: f64){
+        self.split_event(code, amount);
+    }
+
+    #[pyo3(name ="dividend_event")]
+    pub fn py_dividendevent(&mut self, money: f64){
+        self.dividend_event(money);
     }
 }
 
