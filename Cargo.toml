@@ -43,7 +43,7 @@ actix-cors = "0.6.0-beta.7"
 actix-web = "4"
 mongodb = "2"
 
-
+mimalloc = { version = "*", default-features = false }
 futures="0.3.5"
 futures-executor = "^0.3"
 futures-test = "^0.3"
@@ -51,7 +51,9 @@ futures-util = "^0.3"
 async-trait= "0.1.52"
 chrono-tz= { version = "0.5.3", features = ["serde"] }
 chrono = { version = "0.4.19", features = ["serde"] }
-
+pyo3 = { version = "0.17.3", features = ["hashbrown", "extension-module", "multiple-pymethods"] }
+pyo3-chrono = "0.5.0"
+pythonize = "*"
 thiserror = "1.0"
 rand = "0.7"
 quadprog = "0.0.1"
@@ -115,3 +117,10 @@ features = [
   "date_offset",
   "is_in"
 ]
+[lib]
+name = "qars"
+crate-type = ["cdylib"]
+
+[profile.release]
+codegen-units = 1
+lto = "fat"

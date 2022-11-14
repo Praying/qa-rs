@@ -1,18 +1,19 @@
 use std::collections::{BTreeMap, HashMap};
 use std::error::Error;
 
-use crate::qaprotocol::qifi::account::{Account, Order, Position, Trade, QIFI};
-use chrono::{Local, TimeZone, Utc};
-use csv;
-use serde::{Deserialize, Serialize};
-
 use crate::qaaccount::marketpreset::MarketPreset;
 use crate::qaaccount::order::QAOrder;
 use crate::qaaccount::position::{QA_Frozen, QA_Postions};
 use crate::qaaccount::transaction;
 use crate::qaaccount::transaction::QATransaction;
+use crate::qaprotocol::qifi::account::{Account, Order, Position, Trade, QIFI};
 use crate::qautil::tradedate::QATradeDate;
+use chrono::{Local, TimeZone, Utc};
+use csv;
 use log::{error, info, warn};
+use pyo3::prelude::*;
+use pythonize::{depythonize, pythonize};
+use serde::{Deserialize, Serialize};
 use uuid::v1::{Context, Timestamp};
 use uuid::Uuid;
 
@@ -96,22 +97,29 @@ pub struct account {
     pub risk_ratio: f64, // 风险度
 }
 
+#[pyclass]
 #[allow(non_camel_case_types)]
 #[derive(Debug, Clone)]
 pub struct QA_Account {
+    #[pyo3(get, set)]
     init_cash: f64,
     init_hold: HashMap<String, QA_Postions>,
-
+    #[pyo3(get)]
     allow_t0: bool,
+    #[pyo3(get)]
     allow_sellopen: bool,
+    #[pyo3(get)]
     allow_margin: bool,
-
+    #[pyo3(get)]
     auto_reload: bool,
     market_preset: MarketPreset,
+    #[pyo3(get)]
     time: String,
     pub events: HashMap<String, String>,
     pub accounts: account,
+    #[pyo3(get)]
     pub cash: Vec<f64>,
+    #[pyo3(get)]
     pub money: f64,
     pub trades: HashMap<String, QATransaction>,
     pub hold: HashMap<String, QA_Postions>,
@@ -123,10 +131,14 @@ pub struct QA_Account {
     pub user_cookie: String,
     pub dailytrades: BTreeMap<String, Trade>,
     pub dailyorders: BTreeMap<String, Order>,
+    #[pyo3(get)]
     environment: String,
+    #[pyo3(get)]
     event_id: i32,
+    #[pyo3(get)]
     commission_ratio: f64,
     // 手续费率
+    #[pyo3(get)]
     tax_ratio: f64, // tax for qaaccount
 }
 
@@ -1017,7 +1029,6 @@ impl QA_Account {
         for code in target_panel.keys() {
             let amount: f64 = target_panel[code];
             let posx = self.get_position(code);
-            
 
             if map.get(code).is_some() {
                 if posx.is_some() {
@@ -1074,10 +1085,52 @@ impl QA_Account {
                             .unwrap();
                     }
                 }
-            }else {
-            println!("{} -- {} not in map", self.time, code);
+            } else {
+                println!("{} -- {} not in map", self.time, code);
+            }
         }
-        }
+    }
+}
+
+#[pymethods]
+impl QA_Account {
+    /// key: MarketPreset按 code or symbol名称查询
+    #[new]
+    pub fn from_python(
+        account_cookie: &str,
+        portfolio_cookie: &str,
+        init_cash: f64,
+        environment: &str,
+    ) -> Self {
+        QA_Account::new(
+            account_cookie,
+            portfolio_cookie,
+            "admin",
+            init_cash,
+            false,
+            environment,
+        )
+    }
+
+    fn __repr__(&mut self) -> String {
+        format!(
+            "Valar Account - account_id: {} | strategy_id: {} | balance: {}",
+            self.account_cookie.clone(),
+            self.portfolio_cookie.clone(),
+            self.get_balance().clone()
+        )
+    }
+
+    #[pyo3(name = "get_qifi")]
+    pub fn get_qifi_py(&mut self) -> PyResult<String> {
+        let qifi = self.get_qifi_slice();
+        let slicestr = serde_json::to_string(&qifi).unwrap();
+        Ok(slicestr)
+    }
+    #[pyo3(name = "buy")]
+    pub fn py_buy(&mut self, code: &str, amount: f64, time: &str, price: f64) -> PyResult<String> {
+        let order = self.buy(code, amount, time, price);
+        Ok(order.unwrap().order_id)
     }
 }
 
@@ -1099,7 +1152,7 @@ mod tests {
         );
         acc.history_table();
 
-        let mut acc = QA_Account::new("RustT01B2_RBL8", "test", "admin", 100000.0, false, "real");
+        //let  acc = QA_Account::new("RustT01B2_RBL8", "test", "admin", 100000.0, false, "real");
     }
 
     #[test]

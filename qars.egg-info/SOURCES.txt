@@ -1,0 +1,7 @@
+setup.py
+qars/__init__.py
+qars.egg-info/PKG-INFO
+qars.egg-info/SOURCES.txt
+qars.egg-info/dependency_links.txt
+qars.egg-info/not-zip-safe
+qars.egg-info/top_level.txt
