@@ -1,5 +1,0 @@
-Metadata-Version: 2.1
-Name: qars
-Version: 0.0.0
-Requires: orjson
-Requires-Python: >=3.7
