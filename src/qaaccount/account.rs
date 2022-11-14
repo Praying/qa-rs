@@ -1231,20 +1231,20 @@ impl QA_Account {
     }
 
     #[pyo3(name = "get_positions")]
-    pub fn py_getpositions(&mut self) -> PyResult<String>{
+    pub fn py_getpositions(&mut self) -> PyResult<String> {
         let v = serde_json::to_string(&self.hold).unwrap();
         Ok(v)
     }
 
     #[pyo3(name = "get_position")]
-    pub fn py_get_qifi_position(&mut self, code:&str) -> PyResult<String>{
+    pub fn py_get_qifi_position(&mut self, code: &str) -> PyResult<String> {
         let pos = self.get_position(code).unwrap();
         let v = serde_json::to_string(&pos.get_qifi_position()).unwrap();
         Ok(v)
     }
 
     #[pyo3(name = "get_account")]
-    pub fn py_get_qifi_account(&mut self) -> PyResult<String>{
+    pub fn py_get_qifi_account(&mut self) -> PyResult<String> {
         let accmsg = self.get_accountmessage();
         let v = serde_json::to_string(&accmsg).unwrap();
         Ok(v)
