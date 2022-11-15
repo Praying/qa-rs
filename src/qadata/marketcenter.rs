@@ -106,7 +106,7 @@ fn run_t(df: DataFrame) -> (i32, HashMap<String, Kline>) {
     for (code, open, close, high, low, volume, op) in
         izip!(codes, opens, closes, highs, lows, volumes, total_turnover)
     {
-        let seq = Seq {
+        let seq = Kline {
             order_book_id: code.clone(),
             open: open,
 
