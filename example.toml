@@ -56,6 +56,6 @@ qifi_gap=3
 # cache目录必须带/  或者\
 # /media/data/cache/ linux&mac
 #
-cache = "C:\\quant\\data\\twapdaydata\\"
+cache = "C:\\quant\\qa-rs\\"
 cachestart = "2019-01-01"
 cacheend = "2021-12-25"

@@ -7,6 +7,7 @@ use polars::prelude::*;
 pub struct QAMarket {
     pub RegAccount: HashMap<String, QA_Account>,
     pub Data: QADataStructStockDay,
+    pub marketevent: DataFrame
 }
 
 impl QAMarket {
@@ -14,6 +15,7 @@ impl QAMarket {
         Self {
             RegAccount: HashMap::new(),
             Data: QADataStructStockDay::new(),
+            marketevent: DataFrame::default()
         }
     }
 

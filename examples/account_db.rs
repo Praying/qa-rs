@@ -24,7 +24,7 @@ fn main() {
 
     
     let mut market = QAMarket::new();
-    let data = QADataStructStockDay::load_singleday("2020-01-03");
+    let data = QADataStructStockDay::load_mkt();
     market.register_account("BLX_Factor_p5d_std_twap_norank");
     let acc = market.get_account("BLX_Factor_p5d_std_twap_norank");
     acc.change_datetime("2022-01-03".to_string());

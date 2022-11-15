@@ -342,6 +342,7 @@ impl QA_Account {
             orders: self.dailyorders.clone(),
             positions: pos,
             trades: self.dailytrades.clone(),
+            event: self.events.clone(),
             ..QIFI::default()
         }
     }
@@ -548,15 +549,28 @@ impl QA_Account {
         Ok(())
     }
 
-    pub fn split_event(&mut self, code: &str, amount: f64){
+    pub fn split_event(&mut self, code: &str, ratio: f64) {
         // 送转股事件
         let pos = self.get_position(code).unwrap();
-        pos.split_event(amount);
+        let amount = pos.split_event(ratio);
+        self.events.insert(
+            self.time.clone(),
+            format!("split event code{}  ratio{} amount{}", code, ratio, amount),
+        );
     }
 
-    pub fn dividend_event(&mut self, money: f64){
+    pub fn dividend_event(&mut self, code: &str, money_ratio: f64) {
         // 分红事件
+        let pos = self.get_position(code).unwrap();
+        let money = pos.volume_long_his * money_ratio;
         self.money += money;
+        self.events.insert(
+            self.time.clone(),
+            format!(
+                "dividend event code{}  ratio{} money{}",
+                code, money_ratio, money
+            ),
+        );
     }
     /// order about
     /// buy| sell| buy_open| sell_open| buy_close| sell_close|
@@ -1261,13 +1275,13 @@ impl QA_Account {
     }
 
     #[pyo3(name = "split_event")]
-    pub fn py_splitevent(&mut self, code: &str, amount: f64){
-        self.split_event(code, amount);
+    pub fn py_splitevent(&mut self, code: &str, ratio: f64) {
+        self.split_event(code, ratio);
     }
 
-    #[pyo3(name ="dividend_event")]
-    pub fn py_dividendevent(&mut self, money: f64){
-        self.dividend_event(money);
+    #[pyo3(name = "dividend_event")]
+    pub fn py_dividendevent(&mut self, code: &str, ratio: f64) {
+        self.dividend_event(code, ratio);
     }
 }
 

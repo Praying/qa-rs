@@ -1,7 +1,7 @@
 import orjson
 import qars
 import pymongo
-account = qars.QA_QIFIAccount('t', 't', 2000000.0, 'real')
+account = qars.QA_QIFIAccount('t1', 't', 2000000.0, 'real')
 account.buy('000001.XSHE', 200.0, '2022-10-21', 2.0)
 history = []
 print(account.get_qifi())
@@ -12,7 +12,13 @@ print(account.get_account())
 history.append(account.get_qifi())
 account.settle()
 
-account.sell('000001.XSHE', 200.0, '2022-10-22', 2.0)
+
+account.split_event('000001.XSHE', 0.2)
+account.sell('000001.XSHE', 200.0, '2022-10-24', 2.0)
+history.append(account.get_qifi())
+account.settle()
+
+account.sell_open('IC99', 2.0, '2022-10-25', 3000.0)
 print(account.get_qifi())
 history.append(account.get_qifi())
 

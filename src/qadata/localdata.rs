@@ -17,9 +17,18 @@ impl QADataStructStockDay {
         }
     }
 
-
+    pub fn load_mkt() -> Self {
+        let _cache = &CONFIG.DataPath.cache;
+        //let cachepath = format!("{}twap_stock_day_hfq_{}.pq", &CONFIG.DataPath.cache, date);
+        let cachepath = format!("{}mkt.pq", &CONFIG.DataPath.cache);
+        
+        let mut file = File::open(cachepath).expect("Cannot open file.");
+        let df = ParquetReader::new(&mut file).finish().unwrap();
+        Self { data: df }
+    }
     pub fn load_singleday(date: &str) -> Self {
         let _cache = &CONFIG.DataPath.cache;
+        //let cachepath = format!("{}twap_stock_day_hfq_{}.pq", &CONFIG.DataPath.cache, date);
         let cachepath = format!("{}twap_stock_day_hfq_{}.pq", &CONFIG.DataPath.cache, date);
         
         let mut file = File::open(cachepath).expect("Cannot open file.");
@@ -31,6 +40,10 @@ impl QADataStructStockDay {
         let select_codelist =Series::new("", codelist);
         let res = self.data.clone().lazy().filter(col("order_book_id").is_in(lit(select_codelist))).collect().unwrap();
         res
+    }
+
+    pub fn select_date(&mut self, date: &str) ->DataFrame{
+        self.data.clone().lazy().filter(col(date).eq(date)).collect().unwrap()
     }
 
     pub fn high(&mut self) -> &Series {
@@ -49,6 +62,9 @@ impl QADataStructStockDay {
     }
     pub fn volume(&mut self) -> &Series {
         &self.data["volume"]
+    }
+    pub fn cache_singleday(&mut self, date: &str) {
+        //
     }
 }
 #[cfg(test)]

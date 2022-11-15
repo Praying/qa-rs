@@ -52,8 +52,8 @@ class QA_QIFIAccount():
     def get_positions(self):
         return orjson.loads(self.account.get_positions())
 
-    def dividend_event(self, money):
-        self.account.dividend_event(money)
+    def dividend_event(self, ratio):
+        self.account.dividend_event(ratio)
     
-    def split_event(self, code, amount):
-        self.account.split_event(code, amount)
+    def split_event(self, code, ratio):
+        self.account.split_event(code, ratio)

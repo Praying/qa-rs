@@ -118,8 +118,8 @@ features = [
   "is_in"
 ]
 [lib]
-name = "qars"
-crate-type = ["cdylib"]
+name = "qa_rs"
+#crate-type = ["cdylib"]
 
 [profile.release]
 codegen-units = 1
