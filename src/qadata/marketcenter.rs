@@ -1,4 +1,4 @@
-use chrono::{NaiveDate};
+use chrono::NaiveDate;
 use hashbrown::HashMap;
 use itertools::izip;
 use polars::prelude::*;
@@ -12,11 +12,24 @@ pub struct QAMarketCenter {
     pub today: HashMap<String, Kline>,
 }
 impl QAMarketCenter {
-    pub fn new(data: HashMap<i32, HashMap<String, Kline>>) -> Self {
-        QAMarketCenter {
+    pub fn new(path: &str) -> Self {
+        let mut file = File::open(path).expect("Cannot open file.");
+        let df = ParquetReader::new(&mut file).finish().unwrap();
+        use std::time::Instant;
+        let start = Instant::now();
+
+        Self {
             dateidx: 0,
             date: "".to_string(),
-            data: data,
+            data: df
+                .partition_by(vec!["date"])
+                .unwrap()
+                .iter()
+                .map(|df| {
+                    let (k, v) = run_t(df.clone());
+                    (k, v)
+                })
+                .collect::<HashMap<i32, HashMap<String, Kline>>>(),
             today: HashMap::new(),
         }
     }
@@ -57,7 +70,7 @@ pub struct Kline {
 //  'split_coefficient_to',
 //  'dividend_cash_before_tax']
 
-fn run_t(df: DataFrame) -> (i32, HashMap<String, Kline>) {
+pub fn run_t(df: DataFrame) -> (i32, HashMap<String, Kline>) {
     let opens = df["open"]
         .f64()
         .unwrap()
@@ -119,28 +132,4 @@ fn run_t(df: DataFrame) -> (i32, HashMap<String, Kline>) {
         map.insert(code, seq);
     }
     (dates, map)
-}
-fn main() {
-    let mut file = File::open("..\\data\\mkt.pq").expect("Cannot open file.");
-    let df = ParquetReader::new(&mut file).finish().unwrap();
-    println!("{:?}", df);
-    use std::time::Instant;
-    let start = Instant::now();
-
-    let mut MC = QAMarketCenter::new(
-        df.partition_by(vec!["date"])
-            .unwrap()
-            .iter()
-            .map(|df| {
-                let (k, v) = run_t(df.clone());
-                (k, v)
-            })
-            .collect::<HashMap<i32, HashMap<String, Kline>>>(),
-    );
-
-    println!("partition time: {:?} ms", start.elapsed().as_millis());
-    let start = Instant::now();
-    // println!("{:#?}",MC.get_date("2022-10-10").get("000001.XSHE").unwrap());
-    let somdata = MC.get_date("2022-10-10").get("000001.XSHE").unwrap();
-    println!("partition time: {:?} ns", start.elapsed().as_nanos());
 }

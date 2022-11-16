@@ -493,17 +493,17 @@ impl QA_Account {
         }
     }
 
-    pub fn get_codeSubscribed(&mut self) -> Vec<String> {
-        // if a QAAccount trades a packages, then it need the get_codeSubscribed to update the price
+    pub fn get_code_subscribed(&mut self) -> Vec<String> {
+        // if a QAAccount trades a packages, then it need the get_code_subscribed to update the price
         // some examples like below
-        // let codes = account.get_codeSubscribed();
+        // let codes = account.get_code_subscribed();
         // for code in codes.iter():
         //     acc.on_price_change(code, price.get(code), datetime)
-        let mut codeSub = vec![];
+        let mut code_sub = vec![];
         for key in self.hold.keys() {
-            codeSub.push(key.to_string())
+            code_sub.push(key.to_string())
         }
-        codeSub
+        code_sub
     }
 
     pub fn get_slice(&mut self) -> QAAccountSlice {
@@ -1024,7 +1024,7 @@ impl QA_Account {
     }
 
     pub fn target(&mut self, target_panel: HashMap<String, f64>, map: HashMap<String, f64>) {
-        let holding_list = self.get_codeSubscribed();
+        let holding_list = self.get_code_subscribed();
 
         let clear_list = holding_list
             .iter()
@@ -1323,7 +1323,7 @@ mod tests {
 
         acc.init_h("000001");
 
-        println!("{:#?}", acc.get_codeSubscribed());
+        println!("{:#?}", acc.get_code_subscribed());
     }
 
     #[test]

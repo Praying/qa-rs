@@ -1,14 +1,12 @@
-
 use polars::prelude::*;
 use polars_lazy::prelude::*;
-use std::fs::{ File};
+use std::fs::File;
 
 use crate::qaenv::localenv::CONFIG;
 
 pub struct QADataStructStockDay {
     pub data: DataFrame,
 }
-
 
 impl QADataStructStockDay {
     pub fn new() -> Self {
@@ -21,7 +19,7 @@ impl QADataStructStockDay {
         let _cache = &CONFIG.DataPath.cache;
         //let cachepath = format!("{}twap_stock_day_hfq_{}.pq", &CONFIG.DataPath.cache, date);
         let cachepath = format!("{}mkt.pq", &CONFIG.DataPath.cache);
-        
+
         let mut file = File::open(cachepath).expect("Cannot open file.");
         let df = ParquetReader::new(&mut file).finish().unwrap();
         Self { data: df }
@@ -30,20 +28,31 @@ impl QADataStructStockDay {
         let _cache = &CONFIG.DataPath.cache;
         //let cachepath = format!("{}twap_stock_day_hfq_{}.pq", &CONFIG.DataPath.cache, date);
         let cachepath = format!("{}twap_stock_day_hfq_{}.pq", &CONFIG.DataPath.cache, date);
-        
+
         let mut file = File::open(cachepath).expect("Cannot open file.");
         let df = ParquetReader::new(&mut file).finish().unwrap();
         Self { data: df }
     }
 
     pub fn select(&self, codelist: Vec<String>) -> DataFrame {
-        let select_codelist =Series::new("", codelist);
-        let res = self.data.clone().lazy().filter(col("order_book_id").is_in(lit(select_codelist))).collect().unwrap();
+        let select_codelist = Series::new("", codelist);
+        let res = self
+            .data
+            .clone()
+            .lazy()
+            .filter(col("order_book_id").is_in(lit(select_codelist)))
+            .collect()
+            .unwrap();
         res
     }
 
-    pub fn select_date(&mut self, date: &str) ->DataFrame{
-        self.data.clone().lazy().filter(col(date).eq(date)).collect().unwrap()
+    pub fn select_date(&mut self, date: &str) -> DataFrame {
+        self.data
+            .clone()
+            .lazy()
+            .filter(col(date).eq(date))
+            .collect()
+            .unwrap()
     }
 
     pub fn high(&mut self) -> &Series {
@@ -76,9 +85,5 @@ mod test {
         let sd = QADataStructStockDay::load_singleday("2020-01-03");
 
         println!("Final DataFrame:\n{}", sd.data);
-        
-        
     }
-
-
 }

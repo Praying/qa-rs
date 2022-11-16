@@ -14,7 +14,7 @@ pub use mongodb::{
         DeleteOptions, FindOneOptions, FindOptions, InsertOneOptions, UpdateModifications,
         UpdateOptions,
     },
-    Client, Collection, IndexModel
+    Client, Collection, IndexModel,
 };
 
 use serde::Serialize;
@@ -100,7 +100,9 @@ impl QAMongoClient {
             doc! {"account_cookie": slice.account_cookie},
             v,
             UpdateOptions::builder().upsert(Option::from(true)).build(),
-        ).await.unwrap();
+        )
+        .await
+        .unwrap();
     }
 
     pub async fn save_his_qifi_slice(&self, slice: QIFI) {
@@ -114,7 +116,9 @@ impl QAMongoClient {
             doc! {"account_cookie": slice.account_cookie,"trading_day":trading_day},
             v,
             UpdateOptions::builder().upsert(Option::from(true)).build(),
-        ).await.unwrap();
+        )
+        .await
+        .unwrap();
     }
 
     pub async fn save_accounthis(&self, mut account: QA_Account) {
@@ -130,6 +134,8 @@ impl QAMongoClient {
             doc! {"account_cookie": slice.account_cookie,"trading_day":trading_day},
             v,
             UpdateOptions::builder().upsert(Option::from(true)).build(),
-        ).await.unwrap();
+        )
+        .await
+        .unwrap();
     }
 }

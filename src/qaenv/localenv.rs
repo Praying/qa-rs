@@ -134,7 +134,8 @@ pub struct ClickhouseConfig {
 impl Default for ClickhouseConfig {
     fn default() -> Self {
         Self {
-            uri: "tcp://qatest:quantaxis@192.168.2.126:9000?compression=lz4&ping_timeout=42ms".to_owned(),
+            uri: "tcp://qatest:quantaxis@192.168.2.126:9000?compression=lz4&ping_timeout=42ms"
+                .to_owned(),
         }
     }
 }

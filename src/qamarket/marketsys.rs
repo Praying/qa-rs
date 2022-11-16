@@ -1,26 +1,27 @@
 use crate::qaaccount::account::QA_Account;
-use crate::qadata::localdata::QADataStructStockDay;
-use crate::qautil::tradedate::{QATradeDate, QA_util_datelist_to_string};
-use hashbrown::{HashMap, HashSet};
-use polars::prelude::*;
 
+use crate::qadata::marketcenter::{Kline, QAMarketCenter};
+use crate::qaenv::localenv::CONFIG;
+use crate::qautil::tradedate::{QATradeDate, QA_util_datelist_to_string};
+use hashbrown::HashMap;
+use polars::prelude::*;
 pub struct QAMarket {
-    pub RegAccount: HashMap<String, QA_Account>,
-    pub Data: QADataStructStockDay,
-    pub marketevent: DataFrame
+    pub reg_account: HashMap<String, QA_Account>,
+    pub data: QAMarketCenter,
+    pub market_event: DataFrame,
 }
 
 impl QAMarket {
     pub fn new() -> Self {
         Self {
-            RegAccount: HashMap::new(),
-            Data: QADataStructStockDay::new(),
-            marketevent: DataFrame::default()
+            reg_account: HashMap::new(),
+            data: QAMarketCenter::new(&CONFIG.DataPath.cache),
+            market_event: DataFrame::default(),
         }
     }
 
     pub fn register_account(&mut self, account_name: &str) {
-        if self.RegAccount.contains_key(account_name) {
+        if self.reg_account.contains_key(account_name) {
             println!("{} is already registered", account_name);
         } else {
             let acc = QA_Account::new(
@@ -31,34 +32,38 @@ impl QAMarket {
                 false,
                 "backtest",
             );
-            self.RegAccount.insert(account_name.to_string(), acc);
+            self.reg_account.insert(account_name.to_string(), acc);
         }
     }
+    pub fn settle(&mut self) {
+        //market settle event
+    }
+
+    pub fn before_trade(&mut self) {
+        // check holding
+        // from settle table
+    }
     pub fn get_account(&mut self, account_name: &str) -> &mut QA_Account {
-        self.RegAccount.get_mut(account_name).unwrap()
+        self.reg_account.get_mut(account_name).unwrap()
     }
 
     pub fn run(&mut self, start: &str, end: &str) {
         for date in QA_util_datelist_to_string(QATradeDate::new().get_index(start, end)) {
             println!("date: {}", date);
-            let data = QADataStructStockDay::load_singleday(&date);
-            //self.Data.insert(date.clone(), data);
 
-            println!("data: {:?}", data.data);
-            self.run_single(data);
+            self.singleday(&date);
         }
     }
 
-    pub fn run_single(&mut self, data: QADataStructStockDay) {
-        let mut codesub = HashSet::new();
-        for acc in self.RegAccount.values_mut() {
+    pub fn singleday(&mut self, date: &str) {
+        let slice = self.data.get_date(date);
+
+        // before trading
+        for acc in self.reg_account.values_mut() {
             for code in acc.get_codeSubscribed() {
-                codesub.insert(code);
+                let _ = slice.get(&code).unwrap();
             }
         }
-        self.Data = data;
-        let usedata = self.Data.select(codesub.into_iter().collect());
-        println!("usedata: {:?}", usedata);
     }
 
     // pub fn target_weight(
@@ -67,11 +72,11 @@ impl QAMarket {
     //     targetpanel: HashMap<String, f64>,
     //     model: &str,
     // ) {
-    //     if self.RegAccount.contains_key(account_name) {
+    //     if self.reg_account.contains_key(account_name) {
     //         let acc = self.get_account(account_name);
     //         match model {
     //             "twap_30" => {
-    //                 let datacolumn = self.Data.data.select(["order_book_id", "twap_30"]);
+    //                 let datacolumn = self.data.data.select(["order_book_id", "twap_30"]);
     //             }
     //         }
     //     }

@@ -102,7 +102,7 @@ impl QAOrder {
         }
     }
 
-    pub fn finished(&mut self)  {
+    pub fn finished(&mut self) {
         self.volume_left = 0.0;
         self.status = 200;
     }
@@ -110,7 +110,6 @@ impl QAOrder {
     pub fn cancel(&mut self) {
         self.status = 300;
     }
-
 
     pub fn update(&mut self, volume: f64) {
         self.volume_left -= volume;

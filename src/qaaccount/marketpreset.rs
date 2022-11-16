@@ -33,7 +33,7 @@ impl CodePreset {
     }
 
     pub fn calc_tax(&mut self, price: f64, volume: f64, towards: i32) -> f64 {
-        if &self.exchange == "STOCK" && [-1, 3,4,-3,-4].contains(&towards) {
+        if &self.exchange == "STOCK" && [-1, 3, 4, -3, -4].contains(&towards) {
             0.001 * self.calc_marketvalue(price.clone(), volume.clone())
         } else {
             0.0
