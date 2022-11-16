@@ -28,7 +28,7 @@ clap = "2.33"
 toml = "0.5"
 redis = "0.18.0"
 amiquip = "0.4.0"
-hashbrown = "*"
+hashbrown = {version="0.12", features=['serde', 'rayon']}
 
 bson = "0.13.0"
 

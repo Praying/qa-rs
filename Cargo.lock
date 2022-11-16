@@ -1765,15 +1765,7 @@ checksum = "8a9ee70c43aaf417c914396645a0fa852624801b24ebb7ae78fe8272889ac888"
 dependencies = [
  "ahash 0.7.6",
  "rayon",
-]
-
-[[package]]
-name = "hashbrown"
-version = "0.13.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "33ff8ae62cd3a9102e5637afc8452c55acf3844001bd5374e0b0bd7b6616c038"
-dependencies = [
- "ahash 0.8.2",
+ "serde",
 ]
 
 [[package]]
@@ -2009,7 +2001,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "10a35a97730320ffe8e2d410b5d3b69279b98d2c14bdb8b70ea89ecf7888d41e"
 dependencies = [
  "autocfg 1.1.0",
- "hashbrown 0.12.3",
+ "hashbrown",
  "serde",
 ]
 
@@ -3115,7 +3107,7 @@ version = "0.25.1"
 source = "git+https://github.com/yutiansut/polars?rev=7ef7de360ffb1d1cafbe8a1d8915eff113c8b020#7ef7de360ffb1d1cafbe8a1d8915eff113c8b020"
 dependencies = [
  "arrow2",
- "hashbrown 0.12.3",
+ "hashbrown",
  "num 0.4.0",
  "serde",
  "thiserror",
@@ -3133,7 +3125,7 @@ dependencies = [
  "bitflags",
  "chrono",
  "comfy-table",
- "hashbrown 0.12.3",
+ "hashbrown",
  "hex 0.4.3",
  "indexmap",
  "ndarray",
@@ -3212,7 +3204,7 @@ version = "0.25.1"
 source = "git+https://github.com/yutiansut/polars?rev=7ef7de360ffb1d1cafbe8a1d8915eff113c8b020#7ef7de360ffb1d1cafbe8a1d8915eff113c8b020"
 dependencies = [
  "enum_dispatch",
- "hashbrown 0.12.3",
+ "hashbrown",
  "num 0.4.0",
  "polars-arrow",
  "polars-core",
@@ -3303,7 +3295,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "268be0c73583c183f2b14052337465768c07726936a260f480f0857cb95ba543"
 dependencies = [
  "cfg-if 1.0.0",
- "hashbrown 0.12.3",
+ "hashbrown",
  "indoc",
  "inventory",
  "libc",
@@ -3399,7 +3391,7 @@ dependencies = [
  "futures-executor",
  "futures-test",
  "futures-util",
- "hashbrown 0.13.1",
+ "hashbrown",
  "itertools",
  "lazy_static",
  "log",

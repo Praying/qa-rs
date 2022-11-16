@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use hashbrown::HashMap;
 
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -1052,51 +1052,6 @@ impl MarketPreset {
                 commission_coeff_peramount: 0.0001,
                 commission_coeff_pervol: 0.0,
                 commission_coeff_today_peramount: 0.0001,
-                commission_coeff_today_pervol: 0.0,
-            },
-        );
-        market_preset.insert(
-            "HU".to_string(),
-            CodePreset {
-                name: "火币Pro".to_string(),
-                unit_table: 1,
-                price_tick: 1.0,
-                buy_frozen_coeff: 0.06,
-                sell_frozen_coeff: 0.06,
-                exchange: "huobi".to_string(),
-                commission_coeff_peramount: 0.002,
-                commission_coeff_pervol: 0.0,
-                commission_coeff_today_peramount: 0.002,
-                commission_coeff_today_pervol: 0.0,
-            },
-        );
-        market_preset.insert(
-            "OK".to_string(),
-            CodePreset {
-                name: "OKEx".to_string(),
-                unit_table: 1,
-                price_tick: 1.0,
-                buy_frozen_coeff: 0.06,
-                sell_frozen_coeff: 0.06,
-                exchange: "OKEx".to_string(),
-                commission_coeff_peramount: 0.002,
-                commission_coeff_pervol: 0.0,
-                commission_coeff_today_peramount: 0.002,
-                commission_coeff_today_pervol: 0.0,
-            },
-        );
-        market_preset.insert(
-            "BI".to_string(),
-            CodePreset {
-                name: "Bianace".to_string(),
-                unit_table: 1,
-                price_tick: 1.0,
-                buy_frozen_coeff: 0.06,
-                sell_frozen_coeff: 0.06,
-                exchange: "binance".to_string(),
-                commission_coeff_peramount: 0.002,
-                commission_coeff_pervol: 0.0,
-                commission_coeff_today_peramount: 0.002,
                 commission_coeff_today_pervol: 0.0,
             },
         );
