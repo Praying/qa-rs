@@ -5,10 +5,11 @@ use crate::qaenv::localenv::CONFIG;
 use crate::qautil::tradedate::{QATradeDate, QA_util_datelist_to_string};
 use hashbrown::HashMap;
 use polars::prelude::*;
-use std::sync::Mutex;
+use pyo3::prelude::*;
 
+#[pyclass]
 pub struct QAMarket {
-    pub reg_account: Mutex<HashMap<String, QA_Account>>,
+    pub reg_account: HashMap<String, QA_Account>,
     pub data: QAMarketCenter,
     pub market_event: DataFrame,
     pub today: String,
@@ -17,7 +18,7 @@ pub struct QAMarket {
 impl QAMarket {
     pub fn new() -> Self {
         Self {
-            reg_account: Mutex::new(HashMap::new()),
+            reg_account: HashMap::new(),
             data: QAMarketCenter::new(&CONFIG.DataPath.cache),
             market_event: DataFrame::default(),
             today: "1970-01-01".to_string(),
@@ -25,12 +26,7 @@ impl QAMarket {
     }
 
     pub fn register_account(&mut self, account_name: &str) {
-        if self
-            .reg_account
-            .get_mut()
-            .unwrap()
-            .contains_key(account_name)
-        {
+        if self.reg_account.contains_key(account_name) {
             println!("{} is already registered", account_name);
         } else {
             let acc = QA_Account::new(
@@ -41,10 +37,7 @@ impl QAMarket {
                 false,
                 "backtest",
             );
-            self.reg_account
-                .get_mut()
-                .unwrap()
-                .insert(account_name.to_string(), acc);
+            self.reg_account.insert(account_name.to_string(), acc);
         }
     }
     pub fn settle(&mut self, slice: &HashMap<String, Kline>) {
@@ -56,23 +49,22 @@ impl QAMarket {
         // from settle table
     }
     pub fn get_account(&mut self, account_name: &str) -> &mut QA_Account {
-        self.reg_account
-            .get_mut()
-            .unwrap()
-            .get_mut(account_name)
-            .unwrap()
+        self.reg_account.get_mut(account_name).unwrap()
     }
 
     pub fn run(&mut self, start: &str, end: &str) {
+        self.on_initmarket();
         for date in QA_util_datelist_to_string(QATradeDate::new().get_index(start, end)) {
-            println!("date: {}", date);
+            //println!("date: {}", date);
             self.today = date.clone();
             self.singleday(&date);
         }
     }
 
-    pub fn on_bar(&mut self, data: &HashMap<String, Kline>) {}
-    pub fn on_initmarket(&mut self) {}
+    // pub fn on_bar(&mut self, data: &HashMap<String, Kline>) {
+    //     println!("on bar")
+    // }
+    // pub fn on_initmarket(&mut self) {}
     // pub fn target(&mut self, account_name: &str, target_map: &HashMap<String, f64>, mode: &str){
     //     if self.reg_account.get_mut().unwrap().contains_key(account_name){
     //         let acc = self.get_account(account_name);
@@ -92,7 +84,7 @@ impl QAMarket {
         let slice = self.data.get_date(date);
 
         // before trading
-        for acc in self.reg_account.get_mut().unwrap().values_mut() {
+        for acc in self.reg_account.values_mut() {
             acc.change_datetime(date.to_string());
             for code in acc.get_code_subscribed() {
                 let bar = slice.get(&code).unwrap();
@@ -108,7 +100,7 @@ impl QAMarket {
         //on bar
         self.on_bar(&slice);
 
-        for acc in self.reg_account.get_mut().unwrap().values_mut() {
+        for acc in self.reg_account.values_mut() {
             for code in acc.get_code_subscribed() {
                 acc.on_price_change(
                     code.clone(),
@@ -136,4 +128,45 @@ impl QAMarket {
     //         }
     //     }
     // }
+}
+
+pub trait QAStrategy {
+    fn on_bar(&mut self, data: &HashMap<String, Kline>) {}
+    fn on_initmarket(&mut self) {}
+}
+
+impl QAStrategy for QAMarket {
+    fn on_initmarket(&mut self) {
+        self.register_account("x1")
+    }
+    fn on_bar(&mut self, data: &HashMap<String, Kline>) {
+        // println!("dd{:#?}",self.today);
+        // println!("dd{:#?}", self.get_account("x1").get_account_info());
+    }
+}
+
+
+#[pymethods]
+impl QAMarket {
+    #[new]
+    fn new_from_py() -> Self{
+        Self::new()
+    }
+
+    #[pyo3(name = "run")]
+    pub fn run_py(&mut self, start:&str, end:&str) {
+        self.run(start, end)
+    }
+    #[pyo3(name = "init_market")]
+    pub fn init_market(&mut self, account_list:Vec<String>){
+        for acc in account_list{
+            self.register_account(&acc)
+        }
+    }
+    pub fn init(&mut self) {
+        
+
+    }
+
+
 }

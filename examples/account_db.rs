@@ -1,19 +1,20 @@
 use hashbrown::HashMap;
-use qa_rs::{qadata::marketcenter::Kline, qamarket::marketsys::QAMarket};
+use qa_rs::{
+    qadata::marketcenter::Kline,
+    qamarket::marketsys::{QAMarket, QAStrategy},
+};
 use std::time::Instant;
-
-trait QAStrategy {
-    fn on_bar(&mut self, data:&HashMap<String, Kline>){}
-    fn on_initmarket(&mut self){
-    }
+trait QAStrategy2: QAStrategy {
+    fn on_bar(&mut self, data: &HashMap<String, Kline>) {}
+    fn on_initmarket(&mut self) {}
 }
-impl QAStrategy  for QAMarket {
+impl QAStrategy2 for QAMarket {
     fn on_initmarket(&mut self) {
         self.register_account("x1")
     }
-    fn on_bar(&mut  self, data:&HashMap<String, Kline>){
-        println!("{:#?}",self.today);
-        println!("{:#?}", self.get_account("x1").get_account_info());
+    fn on_bar(&mut self, data: &HashMap<String, Kline>) {
+        println!("dd{:#?}", self.today);
+        println!("dd{:#?}", self.get_account("x1").get_account_info());
     }
 }
 #[warn(unused_doc_comments)]
