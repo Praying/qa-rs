@@ -1,6 +1,3 @@
-use hashbrown::{HashMap};
-use std::error::Error;
-use std::collections::BTreeMap;
 use crate::qaaccount::marketpreset::MarketPreset;
 use crate::qaaccount::order::QAOrder;
 use crate::qaaccount::position::{QA_Frozen, QA_Postions};
@@ -10,8 +7,11 @@ use crate::qaprotocol::qifi::account::{Account, Order, Position, Trade, QIFI};
 use crate::qautil::tradedate::QATradeDate;
 use chrono::{Local, TimeZone, Utc};
 use csv;
+use hashbrown::HashMap;
 use log::{error, info, warn};
 use pyo3::prelude::*;
+use std::collections::BTreeMap;
+use std::error::Error;
 
 use serde::{Deserialize, Serialize};
 use uuid::v1::{Context, Timestamp};
@@ -1023,7 +1023,7 @@ impl QA_Account {
         self.history.push(transaction);
     }
 
-    pub fn target(&mut self, target_panel: HashMap<String, f64>, map: HashMap<String, f64>) {
+    pub fn target(&mut self, target_panel: &HashMap<String, f64>, map: &HashMap<String, f64>) {
         let holding_list = self.get_code_subscribed();
 
         let clear_list = holding_list
@@ -1287,6 +1287,8 @@ impl QA_Account {
 
 #[cfg(test)]
 mod tests {
+    use polars::prelude::InitHashMaps;
+
     use super::*;
 
     #[test]
@@ -1854,5 +1856,31 @@ mod tests {
         println!("{:#?}", acc.get_margin());
         // margin  short 20000  long 1*1000*200(price unit)* buy_frozen_coeff 0.12 = 20000
         assert_eq!(acc.get_margin(), 20000.0 + 1000.0 * 200.0 * 0.12);
+    }
+
+    #[test]
+    fn test_target() {
+        let mut acc = QA_Account::new("test", "portfolio", "admin", 1000000.0, false, "backtest");
+        let mut acc2 = QA_Account::new("test", "portfolio", "admin", 1000000.0, false, "backtest");
+        let _ = acc.buy("000001.XSHE", 20.0, "2022-01-20", 1000.0).unwrap();
+        let _ = acc.sell_open("RB99", 20.0, "2022-01-20", 10.0).unwrap();
+        let _ = acc.buy_open("JM99", 20.0, "2022-01-20", 10.0).unwrap();
+        let mut targetx = HashMap::new();
+        targetx.insert("000001.XSHE".to_string(), 20.0);
+        targetx.insert("RB99".to_string(), -20.0);
+        targetx.insert("JM99".to_string(), 20.0);
+        let mut mkt = HashMap::new();
+        mkt.insert("000001.XSHE".to_string(), 1000.0);
+        mkt.insert("RB99".to_string(), 10.0);
+        mkt.insert("JM99".to_string(), 10.0);
+        acc2.time = "2022-01-20".to_string();
+        acc2.target(&targetx, &mkt);
+
+        assert_eq!(
+            acc.get_volume_long("000001.XSHE"),
+            acc2.get_volume_long("000001.XSHE")
+        );
+
+        assert_eq!(acc.get_latest_info(), acc2.get_latest_info());
     }
 }

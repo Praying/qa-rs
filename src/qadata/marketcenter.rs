@@ -31,15 +31,15 @@ impl QAMarketCenter {
             today: HashMap::new(),
         }
     }
-    pub fn get_date(&mut self, date: &str) -> &HashMap<String, Kline> {
-        self.date = date.to_string();
+    pub fn get_date(&mut self, date: &str) -> HashMap<String, Kline> {
+        //self.date = date.to_string();
         let date = NaiveDate::parse_from_str(date, "%Y-%m-%d")
             .unwrap()
             .and_hms(0, 0, 0)
             .timestamp()
             * 1_000_000;
-        self.dateidx = (date / 86400_000_000) as i32;
-        self.data.get(&self.dateidx).unwrap()
+        let dateidx = (date / 86400_000_000) as i32;
+        self.data.remove(&dateidx).unwrap()
     }
 }
 #[derive(Debug)]
@@ -129,14 +129,16 @@ pub fn run_t(df: DataFrame) -> (i32, HashMap<String, Kline>) {
     let split_coefficient_tos = df["split_coefficient_to"]
         .f64()
         .unwrap()
-        .fill_null( FillNullStrategy::Zero).unwrap()
+        .fill_null(FillNullStrategy::Zero)
+        .unwrap()
         .into_iter()
         .map(|x| x.unwrap().to_owned())
         .collect::<Vec<_>>();
     let dividend_cash_before_taxs = df["dividend_cash_before_tax"]
         .f64()
         .unwrap()
-        .fill_null( FillNullStrategy::Zero).unwrap()
+        .fill_null(FillNullStrategy::Zero)
+        .unwrap()
         .into_iter()
         .map(|x| x.unwrap().to_owned())
         .collect::<Vec<_>>();
