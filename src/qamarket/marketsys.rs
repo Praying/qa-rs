@@ -1,10 +1,11 @@
-use crate::qaaccount::account::QA_Account;
+use crate::qaaccount::account::{QA_Account, self};
 
 use crate::qadata::marketcenter::{Kline, QAMarketCenter};
 use crate::qaenv::localenv::CONFIG;
 use crate::qautil::tradedate::{QATradeDate, QA_util_datelist_to_string};
 use hashbrown::HashMap;
 use polars::prelude::*;
+use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
 
 #[pyclass]
@@ -450,11 +451,28 @@ impl QAMarket {
     pub fn set_date_py(&mut self, date: &str) {
         self.today = date.to_string()
     }
-    #[pyo3(name = "target_weight")]
-    pub fn target_weight_py(&mut self, account_name: &str, target_panel: HashMap<String, f64>) {
+    #[pyo3(name = "target_amount")]
+    pub fn target_amount_py(&mut self,  target_panels: HashMap<String,HashMap<String, f64>>) {
         let slice = self.data.get_date(&self.today);
-        if self.reg_account.contains_key(account_name) {
-            self.target(account_name, &target_panel, &slice)
+
+        for account_name in target_panels.keys() {
+            if self.reg_account.contains_key(account_name) {
+                self.target(account_name, target_panels.get(account_name).unwrap(), &slice)
+            }
         }
+        
+    }
+
+    #[pyo3(name = "get_account_qifi")]
+    pub fn get_account_qifi_py(&mut self, account_name: &str) -> PyResult<String> {
+        if self.reg_account.contains_key(account_name) {
+            let acc = self.get_account(account_name);
+            let accmsg = acc.get_accountmessage();
+            let v = serde_json::to_string(&accmsg).unwrap();
+            Ok(v)
+        }else {
+            Err(PyErr::new::<PyTypeError, _>("Error message"))
+        }
+
     }
 }
