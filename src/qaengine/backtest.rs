@@ -49,7 +49,7 @@ impl QABacktest {
         for date in QA_util_datelist_to_string(QATradeDate::new().get_index(&self.start, &self.end )) {
             let data= mkt.borrow_mut(py).data.get_date(&date);
 
-            
+            context.on_session_begin(py);
             // 换日bar
             context.on_calc(py);
             //--------------------------------------------------------------------------
@@ -58,7 +58,7 @@ impl QABacktest {
             // settle and change
             mkt.borrow_mut(py).settle(&data);
             // 新trade_date 开始 | 未开盘 | 此时除了trade_date已切换,其他idx都等同于on_session_end时
-            context.on_session_begin(py);
+            
             // 更新idx_today_begin
  
         }

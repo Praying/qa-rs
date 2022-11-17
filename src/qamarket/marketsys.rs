@@ -165,7 +165,10 @@ impl QAMarket {
     }
     pub fn init(&mut self) {
         
+    }
 
+    pub fn on_session_end(&mut self){
+        
     }
 
 
