@@ -1,7 +1,7 @@
 import orjson
 import qars
 import pymongo
-account = qars.QA_QIFIAccount('t1', 't', 2000000.0, 'real')
+account = qars.QA_QIFIAccount('t2', 't', 2000000.0, 'real')
 account.buy('000001.XSHE', 200.0, '2022-10-21', 2.0)
 history = []
 print(account.get_qifi())

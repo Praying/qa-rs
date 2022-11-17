@@ -24,7 +24,14 @@ impl QAMarket {
             today: "1970-01-01".to_string(),
         }
     }
-
+    pub fn new_from_path(path:&str) -> Self {
+        Self {
+            reg_account: HashMap::new(),
+            data: QAMarketCenter::new(path),
+            market_event: DataFrame::default(),
+            today: "1970-01-01".to_string(),
+        }
+    }
     pub fn register_account(&mut self, account_name: &str) {
         if self.reg_account.contains_key(account_name) {
             println!("{} is already registered", account_name);
@@ -65,20 +72,20 @@ impl QAMarket {
     //     println!("on bar")
     // }
     // pub fn on_initmarket(&mut self) {}
-    // pub fn target(&mut self, account_name: &str, target_map: &HashMap<String, f64>, mode: &str){
-    //     if self.reg_account.get_mut().unwrap().contains_key(account_name){
-    //         let acc = self.get_account(account_name);
-    //         match mode {
-    //             "weight" => {
+    pub fn target(&mut self, account_name: &str, target_map: &HashMap<String, f64>, mode: &str){
+        if self.reg_account.contains_key(account_name){
+            let acc = self.get_account(account_name);
+            match mode {
+                "weight" => {
 
-    //             }
-    //             "amount" => {
+                }
+                "amount" => {
 
-    //             }
-    //             _ =>{}
-    //         }
-    //     }
-    // }
+                }
+                _ =>{}
+            }
+        }
+    }
 
     pub fn singleday(&mut self, date: &str) {
         let slice = self.data.get_date(date);
@@ -149,8 +156,13 @@ impl QAStrategy for QAMarket {
 #[pymethods]
 impl QAMarket {
     #[new]
-    fn new_from_py() -> Self{
-        Self::new()
+    fn new_from_py(path:&str) -> Self{
+        Self {
+            reg_account: HashMap::new(),
+            data: QAMarketCenter::new(path),
+            market_event: DataFrame::default(),
+            today: "1970-01-01".to_string(),
+        }
     }
 
     #[pyo3(name = "run")]
@@ -168,7 +180,7 @@ impl QAMarket {
     }
 
     pub fn on_session_end(&mut self){
-        
+
     }
 
 

@@ -66,7 +66,8 @@ git = "https://github.com/yutiansut/polars"
 rev = "7ef7de360ffb1d1cafbe8a1d8915eff113c8b020"
 default-features = false
 features = [
-"parquet",
+  "parquet",
+  "partition_by",
 # "dynamic_groupby",
 #   "zip_with",
 #   "lazy",
@@ -106,7 +107,7 @@ features = [
 #   "unique_counts",
 #   "log",
 #   "serde-lazy",
-#   "partition_by",
+
 #   "semi_anti_join",
 #   "list_eval",
 #   "cumulative_eval",
