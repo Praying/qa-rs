@@ -21,6 +21,7 @@ def run_market_test():
     })
     print(market.get_account_qifi('x1'))
 
+
 if __name__ == "__main__":
     # backtest = qars.Backtest('2022-01-01', '2022-01-21', 'C:\\quant\\data\\mkt.pq')
     # backtest.run(demo_strategy( 'C:\\quant\\data\\mkt.pq'))

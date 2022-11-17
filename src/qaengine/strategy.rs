@@ -9,15 +9,12 @@ use pyo3::prelude::*;
 #[derive(Debug, Clone)]
 pub struct StrategyWrapper {
     pub py_strategy: Py<PyAny>,
-
 }
 #[pymethods]
 impl StrategyWrapper {
     #[new]
     pub fn new(py_strategy: Py<PyAny>) -> Self {
-        StrategyWrapper {
-            py_strategy,
-        }
+        StrategyWrapper { py_strategy }
     }
 }
 /// 用于调用py_strategy的对应方法 不向Python暴露
@@ -39,8 +36,6 @@ impl StrategyWrapper {
             .call_method0("on_session_end")
             .unwrap();
     }
-
-
 
     pub fn on_calc(&self, py: Python) {
         self.py_strategy.as_ref(py).call_method0("on_calc").unwrap();

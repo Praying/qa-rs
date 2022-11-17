@@ -1,4 +1,4 @@
-use crate::qaaccount::account::{QA_Account, self};
+use crate::qaaccount::account::{self, QA_Account};
 
 use crate::qadata::marketcenter::{Kline, QAMarketCenter};
 use crate::qaenv::localenv::CONFIG;
@@ -133,7 +133,7 @@ impl QAMarket {
                 let posx = acc.get_position(code);
                 let amount = target.clone();
                 let price = current_data.close;
-                if posx.is_none(){
+                if posx.is_none() {
                     if amount > 0.0 {
                         order_list.push((
                             code.to_owned(),
@@ -142,7 +142,7 @@ impl QAMarket {
                             "buy_open",
                             current_data.limit_up,
                         ));
-                    }else{
+                    } else {
                         order_list.push((
                             code.to_owned(),
                             current_data.close,
@@ -151,17 +151,14 @@ impl QAMarket {
                             current_data.limit_down,
                         ));
                     }
-                    
-                }else{
+                } else {
                     let pos = posx.unwrap();
                     let volume_long = pos.volume_long();
                     let volume_short = pos.volume_short();
-    
-                    
-    
+
                     if volume_long + volume_short > 0.0 {
                         // code有持仓且,调仓
-    
+
                         if amount > 0.0 {
                             if volume_short > 0.0 {
                                 // 先平空单
@@ -173,7 +170,7 @@ impl QAMarket {
                                     current_data.limit_up,
                                 ));
                             }
-    
+
                             if amount > volume_long {
                                 order_list.push((
                                     code.to_owned(),
@@ -205,7 +202,7 @@ impl QAMarket {
                                 ));
                                 //self.acc.sell_close(code, price, volume_long);
                             }
-    
+
                             let amount = amount.abs();
                             if amount > volume_short {
                                 order_list.push((
@@ -270,11 +267,9 @@ impl QAMarket {
                             ));
                             //self.acc.sell_open(code, price, -amount);
                         }
+                    }
 
-                }
-                
-                // 获取到pos但volume可能为0
-                
+                    // 获取到pos但volume可能为0
                 }
             }
 
@@ -452,15 +447,18 @@ impl QAMarket {
         self.today = date.to_string()
     }
     #[pyo3(name = "target_amount")]
-    pub fn target_amount_py(&mut self,  target_panels: HashMap<String,HashMap<String, f64>>) {
+    pub fn target_amount_py(&mut self, target_panels: HashMap<String, HashMap<String, f64>>) {
         let slice = self.data.get_date(&self.today);
 
         for account_name in target_panels.keys() {
             if self.reg_account.contains_key(account_name) {
-                self.target(account_name, target_panels.get(account_name).unwrap(), &slice)
+                self.target(
+                    account_name,
+                    target_panels.get(account_name).unwrap(),
+                    &slice,
+                )
             }
         }
-        
     }
 
     #[pyo3(name = "get_account_qifi")]
@@ -470,9 +468,8 @@ impl QAMarket {
             let accmsg = acc.get_accountmessage();
             let v = serde_json::to_string(&accmsg).unwrap();
             Ok(v)
-        }else {
+        } else {
             Err(PyErr::new::<PyTypeError, _>("Error message"))
         }
-
     }
 }
