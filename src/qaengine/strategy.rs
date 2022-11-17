@@ -9,7 +9,7 @@ use pyo3::prelude::*;
 #[derive(Debug, Clone)]
 pub struct StrategyWrapper {
     pub py_strategy: Py<PyAny>,
-    pub weight: HashMap<String, HashMap<String, f64>>,
+
 }
 #[pymethods]
 impl StrategyWrapper {
@@ -17,7 +17,6 @@ impl StrategyWrapper {
     pub fn new(py_strategy: Py<PyAny>) -> Self {
         StrategyWrapper {
             py_strategy,
-            weight: HashMap::new(),
         }
     }
 }
@@ -41,14 +40,7 @@ impl StrategyWrapper {
             .unwrap();
     }
 
-    pub fn get_target(&self, py: Python) -> HashMap<String, HashMap<String, f64>> {
-        let target = self.py_strategy.getattr(py, "weight").unwrap().as_ref(py);
-        let target = target
-            .extract::<HashMap<String, HashMap<String, f64>>>()
-            .unwrap();
-        println!("{:?}", target);
-        target
-    }
+
 
     pub fn on_calc(&self, py: Python) {
         self.py_strategy.as_ref(py).call_method0("on_calc").unwrap();

@@ -1,3 +1,4 @@
+
 from . import qars_core as core
 import datetime as dt
 from typing import Union
@@ -11,57 +12,28 @@ sys.path.append('./')
 class Strategy:
     def __init__(
             self,
+            data_path: str,
 
-            acc: core.Account,
-            lock_margin: bool = True,
-            init_cash: float = 10000000,
     ):
         """
         mode -> npdf | polars
         """
-
-
-        if self.data is None:
-            raise ValueError("Data Type Error: {}".format(type(data)))
-
+        self.market = core.QAMarket(data_path)
         self.hold_period = 0
 
     # --------------------------------------------------------------------------------------------
-    @property
-    def mode(self) -> str:
-        """获取数据模式"""
-        return self.cube.get_mode()
+
+    def register_account(self, account_name: str, init_cash: float, ):
+        self.market.register_account(account_name, init_cash)
 
     @property
-    def frequency(self) -> int:
-        return self.cube.frequency
+    def datetime(self) -> str:
+        return self.market.today
 
-    @property
-    def datetime(self) -> dt.datetime:
-        return self.cube.get_datetime()
-
-    @property
-    def time(self) -> dt.time:
-        return self.cube.get_time()
-
-    @property
-    def date(self) -> dt.date:
-        return self.cube.get_date()
-
-    @property
-    def trade_date(self) -> dt.date:
-        return self.cube.get_trade_date()
-
-    @property
-    def bar_id(self) -> int:
-        return self.cube.bar_id
-
-    @property
     def init_cash(self) -> float:
         """获取init_cash"""
         return self.cube.init_cash
 
-    @property
     def pre_balance(self) -> float:
         """获取pre_balance"""
         return self.cube.pre_balance
@@ -99,42 +71,40 @@ class Strategy:
         """
         策略运行前初始化
         """
-        pass
+        print('py on_init')
+        self.market.init_market(['x1', 'x2'])
 
     def on_bar(self):
         """
         单个code行情事件
         """
-        pass
+        print('py on_bar')
 
     def on_session_begin(self):
         """
         每日盘前事件 before market open,注意此时trade_date已切到新交易日但无法获取当日数据,可用于提取timeline
         """
-        pass
+        print('py on_session_begin')
 
     def on_session_end(self):
         """
         每日盘尾或盘后事件,on or after market end,与on_session_begin共享running_time
         """
-        pass
+        print('py on_session_end')
 
     def on_calc(self):
         """
         核心逻辑,同一时间戳全部bar结束方可触发
         """
-        pass
+        print('py on_calc')
 
     def on_finish(self):
         """
         每日盘后事件,注意此时已完成清仓和结算,回测全部结束
         """
-        pass
+        print('py on_finish')
 
     # --------------------------------------------------------------------------------------------
-    def change_contract(self, price_label: str):
-        """执行换月"""
-        self.cube.change_contract(price_label)
 
     def close_all(self, label: str):
         """全部平仓"""
@@ -154,81 +124,6 @@ class Strategy:
         target_panel 和target的区别是targetpanel采用了先平仓再开仓的模式
         """
         self.cube.target_byorder(panel, label)
-
-    def target_weight_local(self, asset: float, long_weight: float, target_panel: dict, open_price_label: str, amount_price_label: str):
-        """
-        基于品种权重调仓 注意本函数逻辑等效于rust版本target_weight函数,主要用于提供标准target手数计算逻辑参考
-        asset              -> 本次调仓的目标资金
-        long_weight        -> 多头权重,若大于1小于0则默认不考虑权重
-        target_panel       -> 品种->权重带正负
-        open_price_label   -> 开仓价格标签
-        amount_price_label -> 用于计算开仓手数的价格标签,只能是pre_open/pre_close
-        """
-        # 设置amount_map,其value用于计算开仓手数
-        if amount_price_label in ['open', 'high', 'low', 'close']:
-            amount_map = self.get_map('symbol', amount_price_label, 0)
-        elif amount_price_label == 'pre_open':
-            if self.bar_id != 0:
-                amount_map = self.get_map('symbol', 'open', 1)
-            else:
-                amount_map = self.get_map('symbol', 'open', 0)
-        elif amount_price_label == 'pre_close':
-            if self.bar_id != 0:
-                amount_map = self.get_map('symbol', 'close', 1)
-            else:
-                amount_map = self.get_map('symbol', 'close', 0)
-        else:
-            raise ValueError(
-                'amount_price_label must be one of open/high/low/close/pre_open/pre_close')
-
-        # 设置多空资金分配
-        if long_weight > 1 or long_weight < 0:  # 不控制多空资金分配
-            money_buy = money_sell = asset
-            buy_weight = sell_weight = sum(
-                [abs(i) for i in target_panel.values()])
-        else:  # 控制多空资金分配
-            money_buy = asset * long_weight
-            money_sell = asset * (1 - long_weight)
-            buy_weight = sum([abs(i) for i in target_panel.values() if i > 0])
-            sell_weight = sum([abs(i) for i in target_panel.values() if i < 0])
-
-        # 生成目标手数
-        weight_map_new = {}
-        if buy_weight + sell_weight:
-            for code, weight in target_panel.items():
-                try:
-                    if weight > 0:
-                        # pass weight=0的情况
-                        price = amount_map[va.get_symbol(code)]
-                        money = abs(money_buy * weight / buy_weight)
-                        amount = int(money/self.margin_cost(code, price))
-                        if amount >= 1:
-                            weight_map_new[code] = amount
-
-                    if weight < 0:
-                        price = amount_map[va.get_symbol(code)]
-                        money = abs(money_sell * weight / sell_weight)
-                        amount = int(money/self.margin_cost(code, price))
-                        if amount >= 1:
-                            weight_map_new[code] = -1 * amount
-
-                except Exception as e:
-                    print('Error: {} at {}'.format(e, self.datetime))
-
-        #self.cube.target_by_map(weight_map_new, 'open')
-        self.target(weight_map_new, open_price_label)
-
-    def target_weight(self, asset: float, long_weight: float, target_panel: dict, open_price_label: str, amount_price_label: str):
-        """
-        基于品种权重调仓
-        asset              -> 本次调仓的目标资金
-        long_weight        -> 多头权重,若大于1小于0则默认不考虑权重
-        target_panel       -> 品种->权重带正负
-        open_price_label   -> 开仓价格标签
-        amount_price_label -> 用于计算开仓手数的价格标签,只能是pre_open/pre_close
-        """
-        self.cube.target_weight(
-            asset, long_weight, target_panel, open_price_label, amount_price_label)
 
     def buy_open(self, code: str, price: float, amount: int, timeline: bool = False):
         """timeline -> bool 是否记录timeline"""
@@ -305,26 +200,26 @@ class Strategy:
         """
         return self.cube.get_longshort_list(head, shift)
 
-    def get_bar(self, shift: int) -> Union[pl.DataFrame, va.DataFrame]:
-        """
-        获取1个bar | 通过shift决定偏移量
-        """
-        offset, length = self.cube.get_bar_idx(shift)
-        return self.data.slice(offset, length)
+    # def get_bar(self, shift: int) :
+    #     """
+    #     获取1个bar | 通过shift决定偏移量
+    #     """
+    #     offset, length = self.cube.get_bar_idx(shift)
+    #     return self.data.slice(offset, length)
 
-    def get_n_bars(self, n: int, shift: int) -> Union[pl.DataFrame, va.DataFrame]:
-        """
-        获取过去N个bar | 通过shift决定偏移量
-        """
-        offset, length = self.cube.get_n_bars_idx(n, shift)
-        return self.data.slice(offset, length)
+    # def get_n_bars(self, n: int, shift: int) -> Union[pl.DataFrame, va.DataFrame]:
+    #     """
+    #     获取过去N个bar | 通过shift决定偏移量
+    #     """
+    #     offset, length = self.cube.get_n_bars_idx(n, shift)
+    #     return self.data.slice(offset, length)
 
-    def get_today_bars(self, shift: int) -> Union[pl.DataFrame, va.DataFrame]:
-        """
-        获取当前trade_date的所有bar,shift=1时不含当前bar,未支持shift>1的场景
-        """
-        offset, length = self.cube.get_today_bars_idx(shift)
-        return self.data.slice(offset, length)
+    # def get_today_bars(self, shift: int) -> Union[pl.DataFrame, va.DataFrame]:
+    #     """
+    #     获取当前trade_date的所有bar,shift=1时不含当前bar,未支持shift>1的场景
+    #     """
+    #     offset, length = self.cube.get_today_bars_idx(shift)
+    #     return self.data.slice(offset, length)
 
     def get_holding_list(self, direction: str = "all") -> list:
         """

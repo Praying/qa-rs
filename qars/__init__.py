@@ -3,7 +3,8 @@ from . import qars_core as core
 import sys
 sys.path.append('./')
 sys.path.append('../')
-
+from qars.context import Strategy
+from qars.backtest import Backtest
 
 class QA_QIFIAccount():
 

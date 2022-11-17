@@ -32,7 +32,13 @@ impl QABacktest {
 
     #[allow(unused_variables)]
     pub fn run(&mut self, strategy: StrategyWrapper, py: Python) {
-        let mut market = QAMarket::new_from_path(&self.datapath);
+        let mut market: Py<QAMarket> = strategy
+            .py_strategy
+            .getattr(py, "market")
+            .unwrap()
+            .extract(py)
+            .unwrap();
+        //market.borrow_mut(py).new_from_path(&self.datapath);
         //循环内不处理最后一个bar,所以range-1
 
         strategy.on_init(py);
@@ -40,7 +46,7 @@ impl QABacktest {
 
         for date in QA_util_datelist_to_string(QATradeDate::new().get_index(&self.start, &self.end))
         {
-            let data = market.data.get_date(&date);
+            let data = market.borrow_mut(py).data.get_date(&date);
 
             strategy.on_session_begin(py);
             // 换日bar
@@ -50,9 +56,7 @@ impl QABacktest {
             strategy.on_session_end(py);
             // settle and change
 
-            let weights = strategy.get_target(py);
-            market.target(strategy.weight);
-            market.settle(&data);
+            market.borrow_mut(py).settle(&data);
             // 新trade_date 开始 | 未开盘 | 此时除了trade_date已切换,其他idx都等同于on_session_end时
 
             // 更新idx_today_begin
