@@ -223,6 +223,7 @@ pub struct DataPath {
     pub cache: String,
     pub cachestart: String,
     pub cacheend: String,
+    pub market:String,
 }
 
 impl Default for DataPath {
@@ -231,6 +232,7 @@ impl Default for DataPath {
             cache: "C:\\quant\\data\\twapdaydata\\".to_owned(),
             cachestart: "".to_string(),
             cacheend: "".to_string(),
+            market:"C:\\quant\\data\\market\\".to_owned(),
         }
     }
 }

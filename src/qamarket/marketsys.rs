@@ -1,4 +1,4 @@
-use crate::qaaccount::account::{self, QA_Account};
+use crate::qaaccount::account::{QA_Account};
 
 use crate::qadata::marketcenter::{Kline, QAMarketCenter};
 use crate::qaenv::localenv::CONFIG;
