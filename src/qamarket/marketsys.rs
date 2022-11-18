@@ -51,6 +51,16 @@ impl QAMarket {
     }
     pub fn settle(&mut self, slice: &HashMap<String, Kline>) {
         //market settle event
+        let datetime = self.today.clone();
+        for acc in self.reg_account.values_mut() {
+
+            for code in acc.get_code_subscribed(){
+                let kline = slice.get(&code).unwrap();
+                let price = kline.close;
+                acc.on_price_change(code, price, datetime.clone());
+            }
+            acc.settle();
+        }
     }
 
     pub fn before_trade(&mut self) {
@@ -523,5 +533,11 @@ impl QAMarket {
         } else {
             Err(PyErr::new::<PyTypeError, _>("Error message"))
         }
+    }
+
+    #[pyo3(name = "settle")]
+    pub fn py_settle(&mut self) {
+        
+        
     }
 }
