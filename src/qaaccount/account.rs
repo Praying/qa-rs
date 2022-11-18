@@ -1249,8 +1249,6 @@ impl QA_Account {
         Ok(self.get_floatprofit())
     }
 
-
-
     #[pyo3(name = "get_positions")]
     pub fn py_getpositions(&mut self) -> PyResult<String> {
         let v = serde_json::to_string(&self.hold).unwrap();

@@ -522,6 +522,4 @@ impl QAMarket {
             Err(PyErr::new::<PyTypeError, _>("Error message"))
         }
     }
-
-
 }
