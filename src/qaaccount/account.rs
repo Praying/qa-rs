@@ -1249,10 +1249,7 @@ impl QA_Account {
         Ok(self.get_floatprofit())
     }
 
-    #[pyo3(name = "set_time")]
-    pub fn py_settime(&mut self, time: &str) {
-        self.time = time.to_string()
-    }
+
 
     #[pyo3(name = "get_positions")]
     pub fn py_getpositions(&mut self) -> PyResult<String> {
@@ -1266,7 +1263,10 @@ impl QA_Account {
         let v = serde_json::to_string(&pos.get_qifi_position()).unwrap();
         Ok(v)
     }
-
+    #[pyo3(name = "set_time")]
+    pub fn py_settime(&mut self, time: &str) {
+        self.time = time.to_string()
+    }
     #[pyo3(name = "get_account")]
     pub fn py_get_qifi_account(&mut self) -> PyResult<String> {
         let accmsg = self.get_accountmessage();

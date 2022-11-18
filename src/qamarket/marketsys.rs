@@ -472,4 +472,56 @@ impl QAMarket {
             Err(PyErr::new::<PyTypeError, _>("Error message"))
         }
     }
+
+    #[pyo3(name = "get_position_qifi")]
+    pub fn get_position_qifi_py(&mut self, account_name: &str, code: &str) -> PyResult<String> {
+        if self.reg_account.contains_key(account_name) {
+            let acc = self.get_account(account_name);
+            let pos = acc.get_position(code).unwrap();
+            let v = serde_json::to_string(&pos.get_qifi_position()).unwrap();
+            Ok(v)
+        } else {
+            Err(PyErr::new::<PyTypeError, _>("Error message"))
+        }
+    }
+
+    #[pyo3(name = "get_positions_qifi")]
+    pub fn get_positions_qifi_py(&mut self, account_name: &str) -> PyResult<String> {
+        if self.reg_account.contains_key(account_name) {
+            let acc = self.get_account(account_name);
+            let v = serde_json::to_string(&acc.hold).unwrap();
+            Ok(v)
+        } else {
+            Err(PyErr::new::<PyTypeError, _>("Error message"))
+        }
+    }
+
+    #[pyo3(name = "get_closeprofit")]
+    pub fn py_getcloseprofit(&mut self, account_name: &str) -> PyResult<f64> {
+        if self.reg_account.contains_key(account_name) {
+            Ok(self.get_account(account_name).get_closeprofit())
+        } else {
+            Err(PyErr::new::<PyTypeError, _>("Error message"))
+        }
+    }
+
+    #[pyo3(name = "get_floatprofit")]
+    pub fn py_getfloatprofit(&mut self, account_name: &str) -> PyResult<f64> {
+        if self.reg_account.contains_key(account_name) {
+            Ok(self.get_account(account_name).get_floatprofit())
+        } else {
+            Err(PyErr::new::<PyTypeError, _>("Error message"))
+        }
+    }
+
+    #[pyo3(name = "get_balance")]
+    pub fn py_getbalance(&mut self, account_name: &str) -> PyResult<f64> {
+        if self.reg_account.contains_key(account_name) {
+            Ok(self.get_account(account_name).get_balance())
+        } else {
+            Err(PyErr::new::<PyTypeError, _>("Error message"))
+        }
+    }
+
+
 }
