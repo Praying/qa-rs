@@ -99,6 +99,7 @@ pub struct account {
 
 #[pyclass]
 #[allow(non_camel_case_types)]
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct QA_Account {
     #[pyo3(get, set)]

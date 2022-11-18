@@ -9,6 +9,7 @@ use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
 
 #[pyclass]
+#[allow(unused_must_use)]
 pub struct QAMarket {
     pub reg_account: HashMap<String, QA_Account>,
     pub data: QAMarketCenter,
@@ -73,6 +74,7 @@ impl QAMarket {
     //     println!("on bar")
     // }
     // pub fn on_initmarket(&mut self) {}
+    #[allow(unused_must_use)]
     pub fn target(
         &mut self,
         account_name: &str,

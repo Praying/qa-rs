@@ -60,10 +60,10 @@ quadprog = "0.0.1"
 itertools = "0.10.3"
 [dependencies.polars-lazy]
 git = "https://github.com/yutiansut/polars"
-rev = "7ef7de360ffb1d1cafbe8a1d8915eff113c8b020"
+rev = "93771165397938c616a024f95c989cfafa10bdb3"
 [dependencies.polars]
 git = "https://github.com/yutiansut/polars"
-rev = "7ef7de360ffb1d1cafbe8a1d8915eff113c8b020"
+rev = "93771165397938c616a024f95c989cfafa10bdb3"
 default-features = false
 features = [
   "parquet",
@@ -120,7 +120,7 @@ features = [
 ]
 [lib]
 name = "qa_rs"
-crate-type = ["cdylib"]
+#crate-type = ["cdylib"]
 
 [profile.release]
 codegen-units = 1
