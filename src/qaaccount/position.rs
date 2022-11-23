@@ -341,10 +341,16 @@ impl QA_Postions {
     pub fn volume_long(&mut self) -> f64 {
         self.volume_long_today + self.volume_long_his + self.volume_long_frozen()
     }
+    
+    pub fn volume_long_unmut(& self) -> f64 {
+        self.volume_long_today + self.volume_long_his + self.volume_long_frozen_his + self.volume_long_frozen_today
+    }
     pub fn volume_short(&mut self) -> f64 {
         self.volume_short_his + self.volume_short_today + self.volume_short_frozen()
     }
-
+    pub fn volume_short_unmut(& self) -> f64 {
+        self.volume_short_his + self.volume_short_today + self.volume_short_frozen_his + self.volume_short_frozen_today
+    }
     pub fn volume_long_frozen(&mut self) -> f64 {
         self.volume_long_frozen_his + self.volume_long_frozen_today
     }

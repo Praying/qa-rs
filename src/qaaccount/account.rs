@@ -1,8 +1,9 @@
 use crate::qaaccount::marketpreset::MarketPreset;
 use crate::qaaccount::order::QAOrder;
-use crate::qaaccount::position::{QA_Frozen, QA_Postions};
+use crate::qaaccount::position::{QA_Frozen, QA_Postions, adjust_market};
 use crate::qaaccount::transaction;
 use crate::qaaccount::transaction::QATransaction;
+use crate::qadata::marketcenter::Kline;
 use crate::qaprotocol::qifi::account::{Account, Order, Position, Trade, QIFI};
 use crate::qautil::tradedate::QATradeDate;
 use chrono::{Local, TimeZone, Utc};
@@ -10,9 +11,14 @@ use csv;
 use hashbrown::HashMap;
 use log::{error, info, warn};
 use pyo3::prelude::*;
+use rayon::prelude::ParallelIterator;
 use std::collections::BTreeMap;
 use std::error::Error;
+use std::sync::mpsc::channel;
 
+use rayon::iter::IntoParallelRefIterator;
+use rayon::iter::IntoParallelRefMutIterator;
+use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use uuid::v1::{Context, Timestamp};
 use uuid::Uuid;
@@ -378,7 +384,10 @@ impl QA_Account {
         let pos = self.hold.get_mut(code);
         pos
     }
-
+    pub fn get_position_unmut(&self, code: &str) -> Option<&QA_Postions> {
+        let pos = self.hold.get(code);
+        pos
+    }
     pub fn get_volume_long(&mut self, code: &str) -> f64 {
         if self.hold.contains_key(code) {
             let pos = self.get_position(code).unwrap();
@@ -774,7 +783,8 @@ impl QA_Account {
 
         let context = Context::new(self.event_id as u16);
         let ts = Timestamp::from_unix(&context, 1497624119, 1234);
-        let uuid = Uuid::new_v1(ts, self.account_cookie.as_bytes()).expect("failed to generate UUID");
+        let uuid =
+            Uuid::new_v1(ts, self.account_cookie.as_bytes()).expect("failed to generate UUID");
 
         let order_id: String = uuid.to_string();
 
@@ -1023,97 +1033,339 @@ impl QA_Account {
         self.trades.insert(trade_id, transaction.clone());
         self.history.push(transaction);
     }
+    pub fn target_weight(&mut self, target_panel: HashMap<String, f64>, slice: &HashMap<String, Kline>, label: &str) {
 
-    pub fn target(&mut self, target_panel: &HashMap<String, f64>, map: &HashMap<String, f64>) {
-        let holding_list = self.get_code_subscribed();
-
-        let clear_list = holding_list
-            .iter()
-            .filter(|&x| !target_panel.contains_key(x))
-            .collect::<Vec<_>>();
-        let time = self.time.clone();
-        for code in clear_list {
-            let pos = self.get_position(code).unwrap();
-            let volume_long = pos.volume_long();
-            let volume_short = pos.volume_short();
-
-            if map.get(code).is_some() {
-                if volume_long > 0.0 {
-                    self.sell_close(code, volume_long, &time, map[code])
-                        .unwrap();
+        let total_money = self.accounts.pre_balance;
+        let res = target_panel.par_iter().map(|(code, weight)|{
+            let data = slice.get(code).unwrap();
+            match label {
+                "close" => {
+                    let price = data.close;
+                    let amount = (total_money * weight) / price;
+                    match adjust_market(code).as_ref(){
+                        "stock_cn" => {
+                            (code.clone(), (amount/100.0).floor() as f64 * 100.0)
+                        },
+                        "future_cn" => {
+                            (code.clone(), amount)
+                        },
+                        _ => {
+                            (code.clone(), amount)
+                        }
+                    }
+                },
+                "open" => {
+                    let price = data.open;
+                    let amount = (total_money * weight) / price;
+                    match adjust_market(code).as_ref(){
+                        "stock_cn" => {
+                            (code.clone(), (amount/100.0).floor() as f64 * 100.0)
+                        },
+                        "future_cn" => {
+                            (code.clone(), amount)
+                        },
+                        _ => {
+                            (code.clone(), amount)
+                        }
+                    }
+                },
+                _ => {
+                    let price = data.open;
+                    let amount = (total_money * weight) / price;
+                    (code.clone(), amount)
                 }
-                if volume_short > 0.0 {
-                    self.buy_close(code, volume_short, &time, map[code])
-                        .unwrap();
-                }
-            } else {
-                println!("{} -- {} not in map", time, code);
             }
-        }
+        }).collect::<HashMap<String, f64>>();
+        self.target(res, slice, label);
 
-        for code in target_panel.keys() {
-            let amount: f64 = target_panel[code];
-            let posx = self.get_position(code);
+    }
+    pub fn target(&mut self, target_panel: HashMap<String, f64>, slice: &HashMap<String, Kline>, label:&str) {
+        let today = self.time.clone();
 
-            if map.get(code).is_some() {
-                if posx.is_some() {
-                    let pos = posx.unwrap();
-                    let volume_long = pos.volume_long();
-                    let volume_short = pos.volume_short();
+        let (sender, receiver) = channel();
+        //let mut order_list = Vec::new();
+        self.hold
+            .par_iter()
+            .for_each_with(sender.clone(), |s, (code, pos)| {
+                if target_panel.contains_key(code) {
+                } else {
+                    //let pos = self.hold.get(code).unwrap();
+                    let current_data = slice.get(code).unwrap();
+                    if pos.volume_long_his > 0.0 {
+                        s.send((
+                            code.to_owned(),
+                            current_data.close,
+                            pos.volume_long_his,
+                            "sell_close",
+                            current_data.limit_down,
+                        ));
+                    }
+                    if pos.volume_long_today > 0.0 {
+                        s.send((
+                            code.to_owned(),
+                            current_data.close,
+                            pos.volume_long_today,
+                            "sell_closetoday",
+                            current_data.limit_down,
+                        ));
+                    }
+                    if pos.volume_short_his > 0.0 {
+                        s.send((
+                            code.to_owned(),
+                            current_data.close,
+                            pos.volume_short_his,
+                            "buy_close",
+                            current_data.limit_up,
+                        ));
+                    }
+                    if pos.volume_short_today > 0.0 {
+                        s.send((
+                            code.to_owned(),
+                            current_data.close,
+                            pos.volume_short_today,
+                            "buy_closetoday",
+                            current_data.limit_up,
+                        ));
+                    }
+                }
+            });
 
+        target_panel
+            .par_iter()
+            .for_each_with(sender, |s, (code, target)| {
+                let current_data = slice.get(code).unwrap();
+
+                let posx = self.get_position_unmut(code);
+                let amount = target.clone();
+                let price =  match label{
+                    "close" => current_data.close,
+
+                    "open" => current_data.open,
+                    _ => {
+                        println!("label error, use openprice");
+                        current_data.close}
+                };
+                
+                if posx.is_none() {
                     if amount > 0.0 {
-                        if volume_short > 0.0 {
-                            // 先平空单
-                            self.buy_close(code, volume_short, &time, map[code])
-                                .unwrap();
-                        }
-
-                        if amount > volume_long {
-                            self.buy_open(code, amount - volume_long, &time, map[code])
-                                .unwrap();
-                        } else if amount < volume_long {
-                            self.sell_close(code, volume_long - amount, &time, map[code])
-                                .unwrap();
-                        }
-                    } else if amount < 0.0 {
-                        if volume_long > 0.0 {
-                            // 先平多单
-                            self.sell_close(code, volume_long, &time, map[code])
-                                .unwrap();
-                        }
-
-                        let amount = amount.abs();
-                        if amount > volume_short {
-                            self.sell_open(code, amount - volume_short, &time, map[code])
-                                .unwrap();
-                        } else if amount < volume_short {
-                            self.buy_close(code, volume_short - amount, &time, map[code])
-                                .unwrap();
-                        }
+                        s.send((
+                            code.to_owned(),
+                            price,
+                            amount,
+                            "buy_open",
+                            current_data.limit_up,
+                        ));
                     } else {
-                        //amount==0全平
-                        if volume_long > 0.0 {
-                            self.sell_close(code, volume_long, &time, map[code])
-                                .unwrap();
-                        }
-                        if volume_short > 0.0 {
-                            self.buy_close(code, volume_short, &time, map[code])
-                                .unwrap();
-                        }
+                        s.send((
+                            code.to_owned(),
+                            price,
+                            amount.abs(),
+                            "sell_open",
+                            current_data.limit_down,
+                        ));
                     }
                 } else {
-                    // 不存在的品种, 创建新的pos
-                    if amount > 0.0 {
-                        self.buy_open(code, amount, &time, map[code]).unwrap();
-                    } else if amount < 0.0 {
-                        self.sell_open(code, -1.0 * amount, &time, map[code])
-                            .unwrap();
+                    let pos = posx.unwrap();
+                    let volume_long = pos.volume_long_unmut();
+                    let volume_short = pos.volume_short_unmut();
+
+                    if volume_long + volume_short > 0.0 {
+                        // code有持仓且,调仓
+
+                        if amount > 0.0 {
+                            if volume_short > 0.0 {
+                                // 先平空单
+                                s.send((
+                                    code.to_owned(),
+                                    price,
+                                    volume_short,
+                                    "buy_close",
+                                    current_data.limit_up,
+                                ));
+                            }
+
+                            if amount > volume_long {
+                                s.send((
+                                    code.to_owned(),
+                                    price,
+                                    amount - volume_long,
+                                    "buy_open",
+                                    current_data.limit_up,
+                                ));
+                                //self.acc.buy_open(code, price, amount - volume_long);
+                            } else if amount < volume_long {
+                                s.send((
+                                    code.to_owned(),
+                                    price,
+                                    volume_long - amount,
+                                    "sell_close",
+                                    current_data.limit_down,
+                                ));
+                                //self.acc.sell_close(code, price, volume_long - amount);
+                            }
+                        } else if amount < 0.0 {
+                            if volume_long > 0.0 {
+                                // 先平多单
+                                s.send((
+                                    code.to_owned(),
+                                    price,
+                                    volume_long,
+                                    "sell_close",
+                                    current_data.limit_down,
+                                ));
+                                //self.acc.sell_close(code, price, volume_long);
+                            }
+
+                            let amount = amount.abs();
+                            if amount > volume_short {
+                                s.send((
+                                    code.to_owned(),
+                                    price,
+                                    amount - volume_short,
+                                    "sell_open",
+                                    current_data.limit_down,
+                                ));
+                                //self.acc.sell_open(code, price, amount - volume_short);
+                            } else if amount < volume_short {
+                                s.send((
+                                    code.to_owned(),
+                                    price,
+                                    volume_short - amount,
+                                    "buy_close",
+                                    current_data.limit_up,
+                                ));
+                                //self.acc.buy_close(code, price, volume_short - amount);
+                            }
+                        } else {
+                            //amount==0全平
+                            if volume_long > 0.0 {
+                                s.send((
+                                    code.to_owned(),
+                                    price,
+                                    volume_long,
+                                    "sell_close",
+                                    current_data.limit_down,
+                                ));
+                                //self.acc.sell_close(code, price, volume_long);
+                            }
+                            if volume_short > 0.0 {
+                                s.send((
+                                    code.to_owned(),
+                                    price,
+                                    volume_short,
+                                    "buy_close",
+                                    current_data.limit_up,
+                                ));
+                                //self.acc.buy_close(code, price, volume_short);
+                            }
+                        }
+                    } else if volume_long + volume_short == 0.0 {
+                        // code没有持仓,新开仓
+                        if amount > 0.0 {
+                            s.send((
+                                code.to_owned(),
+                                price,
+                                amount,
+                                "buy_open",
+                                current_data.limit_up,
+                            ));
+                            //self.acc.buy_open(code, price, amount);
+                        } else {
+                            s.send((
+                                code.to_owned(),
+                                price,
+                                amount.abs(),
+                                "sell_open",
+                                current_data.limit_down,
+                            ));
+                            //self.acc.sell_open(code, price, -amount);
+                        }
                     }
+
+                    // 获取到pos但volume可能为0
                 }
-            } else {
-                println!("{} -- {} not in map", self.time, code);
-            }
-        }
+            });
+        let order_list: Vec<(String, f64, f64, &str, f64)> = receiver.iter().collect();
+
+        order_list
+            .iter()
+            .for_each(|(code, price, amount, action, limit)| {
+                match action {
+                    //"buy_open"=>self.acc.buy_open(order.0,order.1,order.2),
+                    //"sell_open"=>self.acc.sell_open(order.0,order.1,order.2),
+                    &"buy_close" => {
+                        if price >= limit {
+                            println!(
+                                "errorlog:{:#?} buyclose  highlimit {:#?}/{:#?}/{:#?}/{:#?}/{:#?}/",
+                                today.clone(),
+                                code,    //code
+                                price,   //price
+                                amount,  //amount
+                                *action, //order_type
+                                limit    //limit
+                            );
+                        } else {
+                            self.buy_close(code, *amount, &today.clone(), *price);
+                        }
+                    }
+                    &"sell_close" => {
+                        if price <= limit {
+                            println!(
+                                "errorlog:{:#?} sellclose  lowlimit {:#?}/{:#?}/{:#?}/{:#?}/{:#?}/",
+                                today.clone(),
+                                code,    //code
+                                price,   //price
+                                amount,  //amount
+                                *action, //order_type
+                                limit
+                            );
+                        } else {
+                            self.sell_close(code, *amount, &today.clone(), *price);
+                        }
+                    }
+                    _ => {}
+                }
+            });
+
+        order_list
+            .iter()
+            .for_each(|(code, price, amount, action, limit)| {
+                match action {
+                    //"buy_open"=>self.acc.buy_open(order.0,order.1,order.2),
+                    //"sell_open"=>self.acc.sell_open(order.0,order.1,order.2),
+                    &"sell_open" => {
+                        if price <= limit {
+                            println!(
+                            "errorlog:{:#?} sell_open  lowlimit {:#?}/{:#?}/{:#?}/{:#?}/{:#?}/",
+                            today.clone(),
+                            code, //code
+                            price,          //price
+                            amount,          //amount
+                            *action,          //order_type
+                            limit         //limit
+                        );
+                        } else {
+                            self.sell_open(code, *amount, &today.clone(), *price);
+                        }
+                    }
+                    &"buy_open" => {
+                        if price >= limit {
+                            println!(
+                                "errorlog:{:#?} buy_open  highlimit {:#?}/{:#?}/{:#?}/{:#?}/{:#?}/",
+                                today.clone(),
+                                code,    //code
+                                price,   //price
+                                amount,  //amount
+                                *action, //order_type
+                                limit
+                            );
+                        } else {
+                            self.buy_open(code, *amount, &today.clone(), *price);
+                        }
+                    }
+                    _ => {}
+                }
+            });
     }
 }
 
@@ -1857,29 +2109,29 @@ mod tests {
         assert_eq!(acc.get_margin(), 20000.0 + 1000.0 * 200.0 * 0.12);
     }
 
-    #[test]
-    fn test_target() {
-        let mut acc = QA_Account::new("test", "portfolio", "admin", 1000000.0, false, "backtest");
-        let mut acc2 = QA_Account::new("test", "portfolio", "admin", 1000000.0, false, "backtest");
-        let _ = acc.buy("000001.XSHE", 20.0, "2022-01-20", 1000.0).unwrap();
-        let _ = acc.sell_open("RB99", 20.0, "2022-01-20", 10.0).unwrap();
-        let _ = acc.buy_open("JM99", 20.0, "2022-01-20", 10.0).unwrap();
-        let mut targetx = HashMap::new();
-        targetx.insert("000001.XSHE".to_string(), 20.0);
-        targetx.insert("RB99".to_string(), -20.0);
-        targetx.insert("JM99".to_string(), 20.0);
-        let mut mkt = HashMap::new();
-        mkt.insert("000001.XSHE".to_string(), 1000.0);
-        mkt.insert("RB99".to_string(), 10.0);
-        mkt.insert("JM99".to_string(), 10.0);
-        acc2.time = "2022-01-20".to_string();
-        acc2.target(&targetx, &mkt);
+    // #[test]
+    // fn test_target() {
+    //     let mut acc = QA_Account::new("test", "portfolio", "admin", 1000000.0, false, "backtest");
+    //     let mut acc2 = QA_Account::new("test", "portfolio", "admin", 1000000.0, false, "backtest");
+    //     let _ = acc.buy("000001.XSHE", 20.0, "2022-01-20", 1000.0).unwrap();
+    //     let _ = acc.sell_open("RB99", 20.0, "2022-01-20", 10.0).unwrap();
+    //     let _ = acc.buy_open("JM99", 20.0, "2022-01-20", 10.0).unwrap();
+    //     let mut targetx = HashMap::new();
+    //     targetx.insert("000001.XSHE".to_string(), 20.0);
+    //     targetx.insert("RB99".to_string(), -20.0);
+    //     targetx.insert("JM99".to_string(), 20.0);
+    //     let mut mkt = HashMap::new();
+    //     mkt.insert("000001.XSHE".to_string(), 1000.0);
+    //     mkt.insert("RB99".to_string(), 10.0);
+    //     mkt.insert("JM99".to_string(), 10.0);
+    //     acc2.time = "2022-01-20".to_string();
+    //     acc2.target(&targetx, &mkt);
 
-        assert_eq!(
-            acc.get_volume_long("000001.XSHE"),
-            acc2.get_volume_long("000001.XSHE")
-        );
+    //     assert_eq!(
+    //         acc.get_volume_long("000001.XSHE"),
+    //         acc2.get_volume_long("000001.XSHE")
+    //     );
 
-        assert_eq!(acc.get_latest_info(), acc2.get_latest_info());
-    }
+    //     assert_eq!(acc.get_latest_info(), acc2.get_latest_info());
+    // }
 }
