@@ -64,7 +64,7 @@ pub struct Order {
 }
 
 #[allow(dead_code)]
-#[derive(Serialize, Clone, Deserialize, Debug, Default)]
+#[derive(Serialize, Clone,Deserialize, Debug, Default)]
 pub struct Position {
     pub user_id: String,
     pub exchange_id: String,

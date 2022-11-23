@@ -1,4 +1,5 @@
 use crate::qaaccount::account::QA_Account;
+use crate::qaaccount::portfolio::QA_Portfolio;
 use crate::qadata::marketcenter::{Kline, QAMarketCenter};
 use crate::qaenv::localenv::CONFIG;
 use crate::qaprotocol::qifi::account::QIFI;
@@ -44,7 +45,7 @@ impl QAMarket {
                 "admin",
                 10000000000000.0,
                 false,
-                "backtest",
+                "real",
             );
             self.reg_account.insert(account_name.to_string(), acc);
         }
@@ -594,5 +595,17 @@ impl QAMarket {
         let slice =
             serde_json::to_string(self.data.get_date_ref(&self.today).get(code).unwrap()).unwrap();
         Ok(slice)
+    }
+
+    #[pyo3(name = "get_portfolio")]
+    pub fn py_get_portfolio(&mut self) -> PyResult<String> {
+        let qifislice: HashMap<String, QIFI> = self
+            .reg_account
+            .iter_mut()
+            .map(|(accname, acc)| (accname.clone(), acc.get_qifi_slice()))
+            .collect::<HashMap<String, QIFI>>();
+        let portqifi = QA_Portfolio::new("QAMARKETP".to_string(), qifislice).get_portfolio_qifi();
+        let v = serde_json::to_string(&portqifi).unwrap();
+        Ok(v)
     }
 }

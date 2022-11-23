@@ -48,7 +48,7 @@ pub struct QAMOMSlice {
     // 可用资金
     pub risk_ratio: f64, // 风险度
 }
-
+#[allow(non_camel_case_types)]
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct account_info {
     pub datetime: String,
