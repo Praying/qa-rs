@@ -13,6 +13,7 @@ use pyo3::prelude::*;
 #[allow(unused_must_use)]
 pub struct QAMarket {
     pub reg_account: HashMap<String, QA_Account>,
+    pub portfolio_name: String,
     pub data: QAMarketCenter,
     pub market_event: DataFrame,
     pub today: String,
@@ -22,28 +23,30 @@ impl QAMarket {
     pub fn new() -> Self {
         Self {
             reg_account: HashMap::new(),
+            portfolio_name: String::from(""),
             data: QAMarketCenter::new(&CONFIG.DataPath.cache),
             market_event: DataFrame::default(),
             today: "1970-01-01".to_string(),
         }
     }
-    pub fn new_from_path(path: &str) -> Self {
+    pub fn new_from_path(path: &str, portfolio_name: &str) -> Self {
         Self {
             reg_account: HashMap::new(),
+            portfolio_name: portfolio_name.to_string(),
             data: QAMarketCenter::new(path),
             market_event: DataFrame::default(),
             today: "1970-01-01".to_string(),
         }
     }
-    pub fn register_account(&mut self, account_name: &str) {
+    pub fn register_account(&mut self, account_name: &str, init_cash: f64) {
         if self.reg_account.contains_key(account_name) {
             println!("{} is already registered", account_name);
         } else {
             let acc = QA_Account::new(
                 account_name,
-                "portfolio",
+                &self.portfolio_name,
                 "admin",
-                10000000000000.0,
+                init_cash,
                 false,
                 "real",
             );
@@ -433,7 +436,7 @@ pub trait QAStrategy {
 
 impl QAStrategy for QAMarket {
     fn on_initmarket(&mut self) {
-        self.register_account("x1")
+        self.register_account("x1", 1000000.0)
     }
     fn on_bar(&mut self, data: &HashMap<String, Kline>) {
         // println!("dd{:#?}",self.today);
@@ -444,9 +447,10 @@ impl QAStrategy for QAMarket {
 #[pymethods]
 impl QAMarket {
     #[new]
-    fn new_from_py(path: &str) -> Self {
+    fn new_from_py(portfolio_name: &str, path: &str) -> Self {
         Self {
             reg_account: HashMap::new(),
+            portfolio_name: portfolio_name.to_string(),
             data: QAMarketCenter::new(path),
             market_event: DataFrame::default(),
             today: "1970-01-01".to_string(),
@@ -458,9 +462,9 @@ impl QAMarket {
         self.run(start, end)
     }
     #[pyo3(name = "init_market")]
-    pub fn init_market(&mut self, account_list: Vec<String>) {
-        for acc in account_list {
-            self.register_account(&acc)
+    pub fn init_market(&mut self, account_list: HashMap<String, f64>) {
+        for acc in account_list.keys() {
+            self.register_account(acc, account_list[acc])
         }
     }
     pub fn init(&mut self) {}
@@ -565,9 +569,12 @@ impl QAMarket {
                 "[qamarket] account {:#?} settle {:#?}",
                 acc.account_cookie, self.today
             );
-            acc.settle();
             result.insert(acc.account_cookie.clone(), acc.get_qifi_slice());
+            acc.settle();
         }
+        let portqifi =
+            QA_Portfolio::new(self.portfolio_name.clone(), result.clone()).get_portfolio_qifi();
+        result.insert(self.portfolio_name.clone(), portqifi);
         let v = serde_json::to_string(&result).unwrap();
         Ok(v)
     }
@@ -597,6 +604,12 @@ impl QAMarket {
         Ok(slice)
     }
 
+    #[pyo3(name = "before_trade")]
+    pub fn py_before_trade(&mut self) {
+        let slice = self.data.get_date(&self.today);
+        self.before_trade(&slice);
+    }
+
     #[pyo3(name = "get_portfolio")]
     pub fn py_get_portfolio(&mut self) -> PyResult<String> {
         let qifislice: HashMap<String, QIFI> = self
@@ -604,7 +617,8 @@ impl QAMarket {
             .iter_mut()
             .map(|(accname, acc)| (accname.clone(), acc.get_qifi_slice()))
             .collect::<HashMap<String, QIFI>>();
-        let portqifi = QA_Portfolio::new("QAMARKETP".to_string(), qifislice).get_portfolio_qifi();
+        let portqifi =
+            QA_Portfolio::new(self.portfolio_name.clone(), qifislice).get_portfolio_qifi();
         let v = serde_json::to_string(&portqifi).unwrap();
         Ok(v)
     }

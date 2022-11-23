@@ -10,7 +10,7 @@ trait QAStrategy2: QAStrategy {
 }
 impl QAStrategy2 for QAMarket {
     fn on_initmarket(&mut self) {
-        self.register_account("x1")
+        self.register_account("x1", 100000.0)
     }
     fn on_bar(&mut self, data: &HashMap<String, Kline>) {
         println!("dd{:#?}", self.today);

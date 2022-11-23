@@ -79,22 +79,41 @@ impl QA_Portfolio {
                             pos.pos_long_today += newpos.pos_long_today;
                             pos.pos_short_his += newpos.pos_short_his;
                             pos.pos_short_today += newpos.pos_short_today;
+                            if pos.volume_long + newpos.volume_long > 0.0 {
+                                pos.open_price_long = (pos.open_price_long * pos.volume_long
+                                    + newpos.open_price_long * newpos.volume_long)
+                                    / (pos.volume_long + newpos.volume_long);
+                            } else {
+                                pos.open_price_long = 0.0;
+                            }
 
-                            pos.open_price_long = (pos.open_price_long * pos.volume_long
-                                + newpos.open_price_long * newpos.volume_long)
-                                / (pos.volume_long + newpos.volume_long);
-                            pos.open_price_short = (pos.open_price_short * pos.volume_short
-                                + newpos.open_price_short * newpos.volume_short)
-                                / (pos.volume_short + newpos.volume_short);
+                            if pos.volume_short + newpos.volume_short > 0.0 {
+                                pos.open_price_short = (pos.open_price_short * pos.volume_short
+                                    + newpos.open_price_short * newpos.volume_short)
+                                    / (pos.volume_short + newpos.volume_short);
+                            } else {
+                                pos.open_price_short = 0.0;
+                            }
+
                             pos.open_cost_long += newpos.open_cost_long;
                             pos.open_cost_short += newpos.open_cost_short;
-                            pos.position_price_long = (pos.position_price_long * pos.volume_long
-                                + newpos.position_price_long * newpos.volume_long)
-                                / (pos.volume_long + newpos.volume_long);
-                            pos.position_price_short = (pos.position_price_short
-                                * pos.volume_short
-                                + newpos.position_price_short * newpos.volume_short)
-                                / (pos.volume_short + newpos.volume_short);
+                            if pos.volume_long + newpos.volume_long > 0.0 {
+                                pos.position_price_long = (pos.position_price_long
+                                    * pos.volume_long
+                                    + newpos.position_price_long * newpos.volume_long)
+                                    / (pos.volume_long + newpos.volume_long);
+                            } else {
+                                pos.position_price_long = 0.0;
+                            }
+                            if pos.volume_short + newpos.volume_short > 0.0 {
+                                pos.position_price_short = (pos.position_price_short
+                                    * pos.volume_short
+                                    + newpos.position_price_short * newpos.volume_short)
+                                    / (pos.volume_short + newpos.volume_short);
+                            } else {
+                                pos.position_price_short = 0.0;
+                            }
+
                             pos.position_cost_long += newpos.position_cost_long;
                             pos.position_cost_short += newpos.position_cost_short;
                             pos.last_price = newpos.last_price;
@@ -120,12 +139,14 @@ impl QA_Portfolio {
                 });
 
                 qifi.orders.extend(qifi_.orders.clone());
-
+                qifi.trading_day = qifi_.trading_day.clone();
+                qifi.broker_name = qifi_.broker_name.clone();
                 qifi.trades.extend(qifi_.trades.clone());
                 qifi
             });
         qifi.account_cookie = self.portfolio_id.clone();
         qifi.portfolio = self.portfolio_id.clone();
+        qifi.accounts.user_id = self.portfolio_id.clone();
         qifi
     }
 }

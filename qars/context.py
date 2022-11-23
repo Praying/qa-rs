@@ -72,7 +72,7 @@ class Strategy:
         策略运行前初始化
         """
         print('py on_init')
-        self.market.init_market(['x1', 'x2'])
+        self.market.init_market({'000001': 2000000, '000002': 5000000})
 
     def on_bar(self):
         """

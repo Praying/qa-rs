@@ -774,7 +774,7 @@ impl QA_Account {
 
         let context = Context::new(self.event_id as u16);
         let ts = Timestamp::from_unix(&context, 1497624119, 1234);
-        let uuid = Uuid::new_v1(ts, &[1, 2, 3, 4, 5, 6]).expect("failed to generate UUID");
+        let uuid = Uuid::new_v1(ts, self.account_cookie.as_bytes()).expect("failed to generate UUID");
 
         let order_id: String = uuid.to_string();
 
