@@ -74,7 +74,7 @@ impl QAMarket {
     pub fn run(&mut self, start: &str, end: &str) {
         self.on_initmarket();
         for date in QA_util_datelist_to_string(QATradeDate::new().get_index(start, end)) {
-            //println!("date: {}", date);
+            println!("date: {}", date);
             self.today = date.clone();
             self.singleday(&date);
         }

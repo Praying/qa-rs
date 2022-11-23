@@ -61,6 +61,7 @@ itertools = "0.10.3"
 lmdb = "0.8.0"
 sled = "0.34.7"
 peroxide = "0.32.1"
+arrow2 = {version="0.14.2", features=["full"]}
 [dependencies.polars-lazy]
 git = "https://github.com/yutiansut/polars"
 rev = "93771165397938c616a024f95c989cfafa10bdb3"
@@ -123,7 +124,7 @@ features = [
 ]
 [lib]
 name = "qa_rs"
-#crate-type = ["cdylib"]
+crate-type = ["cdylib"]
 
 [profile.release]
 codegen-units = 1

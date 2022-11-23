@@ -39,10 +39,17 @@ impl QAMarketCenter {
             .timestamp()
             * 1_000_000;
         let dateidx = (date / 86400_000_000) as i32;
-        self.data.remove(&dateidx).unwrap()
+
+        self.data.get(&dateidx).unwrap().clone()
+        // let res = self.data.remove(&dateidx).unwrap();
+
+        // self.data.insert(dateidx, res.clone());
+        // res
+        
+
     }
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Kline {
     pub order_book_id: String,
     pub open: f64,
