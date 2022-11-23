@@ -43,7 +43,7 @@ impl QAMarket {
             schedule_queue: queue![],
         }
     }
-    pub fn set_date(&mut self, date:&str){
+    pub fn set_date(&mut self, date: &str) {
         self.today = date.to_string();
         for acc in self.reg_account.values_mut() {
             acc.change_datetime(self.today.clone());
@@ -85,26 +85,37 @@ impl QAMarket {
             for code in acc.get_code_subscribed() {
                 let kline = slice.get(&code).unwrap();
                 if kline.dividend_cash_before_tax != 0.0 {
+                    println!(
+                        "[qamarket event] dividend_cash {} {}",
+                        code, kline.dividend_cash_before_tax
+                    );
                     acc.dividend_event(&code, kline.dividend_cash_before_tax);
                 }
                 if kline.split_coefficient_to != 0.0 {
+                    println!(
+                        "[qamarket event] split {} {}",
+                        code, kline.split_coefficient_to
+                    );
                     acc.split_event(&code, kline.split_coefficient_to);
                 }
                 let price = kline.open;
                 acc.on_price_change(code, price, self.today.clone());
             }
         }
-        while self.schedule_queue.size()>0{
-            let (eventname, accountname, target)  = self.schedule_queue.remove().unwrap();
-
-            match eventname.as_ref(){
-                "target_amount" =>self.target(&accountname, target, slice, "open"),
-                "target_weight" =>self.target_weight(&accountname, target, slice, "open"),
-                _ => {println!("{} is not supported", eventname)}
+        while self.schedule_queue.size() > 0 {
+            let (eventname, accountname, target) = self.schedule_queue.remove().unwrap();
+            println!(
+                "[qamarket event] schedule {} - {} - {}",
+                self.today, eventname, accountname
+            );
+            match eventname.as_ref() {
+                "target_amount" => self.target(&accountname, target, slice, "open"),
+                "target_weight" => self.target_weight(&accountname, target, slice, "open"),
+                _ => {
+                    println!("{} is not supported", eventname)
+                }
             };
-
         }
-
     }
     pub fn get_account(&mut self, account_name: &str) -> &mut QA_Account {
         self.reg_account.get_mut(account_name).unwrap()
@@ -132,8 +143,12 @@ impl QAMarket {
         label: &str,
     ) {
         match label {
-            "next_open" => {
-                self.schedule_queue.add(("target_amount".to_string(), account_name.to_string(), target_panel));
+            "next_open" | "nextopen" => {
+                self.schedule_queue.add((
+                    "target_amount".to_string(),
+                    account_name.to_string(),
+                    target_panel,
+                ));
             }
             _ => {
                 if self.reg_account.contains_key(account_name) {
@@ -145,7 +160,6 @@ impl QAMarket {
                 }
             }
         }
-        
     }
     #[allow(unused_must_use)]
     pub fn target_weight(
@@ -156,8 +170,12 @@ impl QAMarket {
         label: &str,
     ) {
         match label {
-            "next_open" => {
-                self.schedule_queue.add(("target_weight".to_string(), account_name.to_string(), target_panel));
+            "next_open" | "nextopen" => {
+                self.schedule_queue.add((
+                    "target_weight".to_string(),
+                    account_name.to_string(),
+                    target_panel,
+                ));
             }
             _ => {
                 if self.reg_account.contains_key(account_name) {
@@ -169,7 +187,6 @@ impl QAMarket {
                 }
             }
         }
-        
     }
     pub fn singleday(&mut self, date: &str) {
         let slice = self.data.get_date(date);

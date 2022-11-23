@@ -17,9 +17,9 @@ def run_market_test():
     market.set_date('2022-07-20')
     market.before_trade()
     market.target_weight({
-        "000001": {"000001.XSHE": 0.2, "600010.XSHG": 0.6},
-        "000002": {"000001.XSHE": 0.2, "600010.XSHG": 0.6}
-    }, 'open')
+        "000001": {"000001.XSHE": 0.4, "600010.XSHG": 0.6},
+        "000002": {"000001.XSHE": 0.4, "600010.XSHG": 0.6}
+    }, 'next_open')
     # print(market.get_account_qifi('x1'))
     # print(market.get_portfolio())
     settlemsg = market.settle()
@@ -31,9 +31,9 @@ def run_market_test():
     market.before_trade()
 
     market.target_weight({
-        "000001": {"000001.XSHE": 0.2, "600010.XSHG": 0.6},
-        "000002": {"000001.XSHE": 0.2, "600010.XSHG": 0.6}
-    }, 'open')
+        "000001": {"000001.XSHE": 0.4, "600010.XSHG": 0.6},
+        "000002": {"000001.XSHE": 0.4, "600010.XSHG": 0.6}
+    }, 'next_open')
     # print(market.get_account_qifi('x1'))
     # print(market.get_portfolio())
     settlemsg = market.settle()
@@ -42,9 +42,9 @@ def run_market_test():
     market.set_date('2022-07-22')
     market.before_trade()
     market.target_weight({
-        "000001": {"000001.XSHE": 0.2, "600010.XSHG": 0.6},
-        "000002": {"000001.XSHE": 0.2, "600010.XSHG": 0.6}
-    }, 'open')
+        "000001": {"000001.XSHE": 0.4, "600010.XSHG": 0.6},
+        "000002": {"000001.XSHE": 0.4, "600010.XSHG": 0.6}
+    }, 'next_open')
     # print(market.get_account_qifi('x1'))
     # print(market.get_portfolio())
     settlemsg = market.settle()
@@ -54,9 +54,9 @@ def run_market_test():
     market.set_date('2022-07-25')
     market.before_trade()
     market.target_weight({
-        "000001": {"000001.XSHE": 0.3, "600010.XSHG": 0.6},
-        "000002": {"000001.XSHE": 0.3, "600010.XSHG": 0.6}
-    }, 'open')
+        "000001": {"000001.XSHE": 0.4, "600010.XSHG": 0.6},
+        "000002": {"000001.XSHE": 0.4, "600010.XSHG": 0.6}
+    }, 'next_open')
     # print(market.get_account_qifi('x1'))
     # print(market.get_portfolio())
     settlemsg = market.settle()
