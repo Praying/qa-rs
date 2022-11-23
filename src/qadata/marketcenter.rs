@@ -4,6 +4,7 @@ use itertools::izip;
 use polars::prelude::*;
 use std::fs::File;
 
+use serde::{Deserialize, Serialize};
 #[warn(non_camel_case_types)]
 pub struct QAMarketCenter {
     pub dateidx: i32,
@@ -41,15 +42,20 @@ impl QAMarketCenter {
         let dateidx = (date / 86400_000_000) as i32;
 
         self.data.get(&dateidx).unwrap().clone()
-        // let res = self.data.remove(&dateidx).unwrap();
+    }
 
-        // self.data.insert(dateidx, res.clone());
-        // res
-        
-
+    pub fn get_date_ref(&mut self, date: &str) -> &HashMap<String, Kline> {
+        //self.date = date.to_string();
+        let date = NaiveDate::parse_from_str(date, "%Y-%m-%d")
+            .unwrap()
+            .and_hms(0, 0, 0)
+            .timestamp()
+            * 1_000_000;
+        let dateidx = (date / 86400_000_000) as i32;
+        self.data.get(&dateidx).unwrap()
     }
 }
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Kline {
     pub order_book_id: String,
     pub open: f64,

@@ -1,7 +1,7 @@
-use crate::qaaccount::account::{QA_Account};
-
+use crate::qaaccount::account::QA_Account;
 use crate::qadata::marketcenter::{Kline, QAMarketCenter};
 use crate::qaenv::localenv::CONFIG;
+use crate::qaprotocol::qifi::account::QIFI;
 use crate::qautil::tradedate::{QATradeDate, QA_util_datelist_to_string};
 use hashbrown::HashMap;
 use polars::prelude::*;
@@ -53,8 +53,7 @@ impl QAMarket {
         //market settle event
         let datetime = self.today.clone();
         for acc in self.reg_account.values_mut() {
-
-            for code in acc.get_code_subscribed(){
+            for code in acc.get_code_subscribed() {
                 let kline = slice.get(&code).unwrap();
                 let price = kline.close;
                 acc.on_price_change(code, price, datetime.clone());
@@ -63,9 +62,22 @@ impl QAMarket {
         }
     }
 
-    pub fn before_trade(&mut self) {
+    pub fn before_trade(&mut self, slice: &HashMap<String, Kline>) {
         // check holding
         // from settle table
+        for acc in self.reg_account.values_mut() {
+            for code in acc.get_code_subscribed() {
+                let kline = slice.get(&code).unwrap();
+                if kline.dividend_cash_before_tax != 0.0 {
+                    acc.dividend_event(&code, kline.dividend_cash_before_tax);
+                }
+                if kline.split_coefficient_to != 0.0 {
+                    acc.split_event(&code, kline.split_coefficient_to);
+                }
+                let price = kline.open;
+                acc.on_price_change(code, price, self.today.clone());
+            }
+        }
     }
     pub fn get_account(&mut self, account_name: &str) -> &mut QA_Account {
         self.reg_account.get_mut(account_name).unwrap()
@@ -536,8 +548,51 @@ impl QAMarket {
     }
 
     #[pyo3(name = "settle")]
-    pub fn py_settle(&mut self) {
-        
-        
+    pub fn py_settle(&mut self) -> PyResult<String> {
+        let slice = self.data.get_date_ref(&self.today);
+        println!("[qamarket] event settle {:#?}", self.today);
+        let mut result = HashMap::new();
+        for acc in self.reg_account.values_mut() {
+            for code in acc.get_code_subscribed() {
+                acc.on_price_change(
+                    code.clone(),
+                    slice.get(&code).unwrap().close,
+                    self.today.clone(),
+                )
+            }
+            println!(
+                "[qamarket] account {:#?} settle {:#?}",
+                acc.account_cookie, self.today
+            );
+            acc.settle();
+            result.insert(acc.account_cookie.clone(), acc.get_qifi_slice());
+        }
+        let v = serde_json::to_string(&result).unwrap();
+        Ok(v)
+    }
+
+    #[pyo3(name = "get_mkt_slice")]
+    pub fn py_get_mkt_slice(&mut self) -> PyResult<String> {
+        let slice = self.data.get_date_ref(&self.today);
+        let v = serde_json::to_string(slice).unwrap();
+        Ok(v)
+    }
+
+    #[pyo3(name = "get_qifis")]
+    pub fn py_get_qifis_slice(&mut self) -> PyResult<String> {
+        let qifislice: HashMap<String, QIFI> = self
+            .reg_account
+            .iter_mut()
+            .map(|(accname, acc)| (accname.clone(), acc.get_qifi_slice()))
+            .collect::<HashMap<String, QIFI>>();
+        let v = serde_json::to_string(&qifislice).unwrap();
+        Ok(v)
+    }
+
+    #[pyo3(name = "get_code")]
+    pub fn py_get_code(&mut self, code: &str) -> PyResult<String> {
+        let slice =
+            serde_json::to_string(self.data.get_date_ref(&self.today).get(code).unwrap()).unwrap();
+        Ok(slice)
     }
 }

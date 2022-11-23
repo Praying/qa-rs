@@ -7,20 +7,25 @@ class demo_strategy(qars.Strategy):
 
     def on_calc(self):
         # self.market
-        pass
+        print(self.market.to)
 
 
 def run_market_test():
     market = qars.core.QAMarket('C:\\quant\\data\\mkt.pq')
     market.init_market(['x1', 'x2'])
     market.set_date('2022-10-21')
-
+    
     market.target_amount({
         "x1": {"000002.XSHE": 500, "600010.XSHG": 500},
         "x2": {"000002.XSHE": 500, "600010.XSHG": 500}
     })
     print(market.get_account_qifi('x1'))
+    settlemsg = market.settle()
+    print(settlemsg)
+    #print(market.get_mkt_slice())
+    print(market.get_code('000001.XSHE'))
 
+    print(market.get_qifis())
 
 if __name__ == "__main__":
     # backtest = qars.Backtest('2022-01-01', '2022-01-21', 'C:\\quant\\data\\mkt.pq')
