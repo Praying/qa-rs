@@ -10,6 +10,7 @@
 - [strategy](strategy.md)
 - [backtest](backtest.md)
 - [performance](performance.md)
+- [data](data.md)
 
 ## protocols
 
@@ -22,6 +23,8 @@
 - [mongo](mongo.md)
 - [clickhouse](clickhouse.md)
 - [file](file.md)
+
+
 
 ## runtime
 

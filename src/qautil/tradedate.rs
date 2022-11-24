@@ -1142,7 +1142,7 @@ impl QATradeDate {
         self.to_string(res)
     }
     pub fn get_trade_day(&mut self, datetime: String) -> String {
-        println!("datetime now: {}", datetime);
+        //println!("datetime now: {}", datetime);
         if datetime.len() == 10 {
             if self.if_trade_date(&datetime) {
                 datetime
@@ -1166,7 +1166,7 @@ impl QATradeDate {
     }
 }
 
-pub fn get_n_day_before_date9(n: i64) -> String {
+pub fn get_n_day_before_date(n: i64) -> String {
     let now = Local::now().timestamp();
     let sec = now - 3600 * 24 * n;
     let dt = Local.timestamp(sec, 0);

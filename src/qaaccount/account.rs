@@ -1,6 +1,6 @@
 use crate::qaaccount::marketpreset::MarketPreset;
 use crate::qaaccount::order::QAOrder;
-use crate::qaaccount::position::{QA_Frozen, QA_Postions, adjust_market};
+use crate::qaaccount::position::{adjust_market, QA_Frozen, QA_Postions};
 use crate::qaaccount::transaction;
 use crate::qaaccount::transaction::QATransaction;
 use crate::qadata::marketcenter::Kline;
@@ -474,9 +474,11 @@ impl QA_Account {
         self.events = HashMap::new();
         self.event_id = 0;
 
-        for pos in self.hold.values_mut() {
+        self.hold.par_iter_mut().for_each(|(_, pos)| {
             pos.settle();
-        }
+        });
+        self.hold
+            .retain(|_, pos| pos.volume_long() != 0.0 || pos.volume_short() != 0.0);
         // init the next day cash
         let balance_settle =
             self.accounts.pre_balance + self.accounts.close_profit - self.accounts.commission;
@@ -509,11 +511,7 @@ impl QA_Account {
         // let codes = account.get_code_subscribed();
         // for code in codes.iter():
         //     acc.on_price_change(code, price.get(code), datetime)
-        let mut code_sub = vec![];
-        for key in self.hold.keys() {
-            code_sub.push(key.to_string())
-        }
-        code_sub
+        self.hold.par_keys().map(|x| x.to_string()).collect()
     }
 
     pub fn get_slice(&mut self) -> QAAccountSlice {
@@ -567,10 +565,44 @@ impl QA_Account {
             self.time.clone(),
             format!("split event code{}  ratio{} amount{}", code, ratio, amount),
         );
+        self.event_id += 1;
+        let context = Context::new(self.event_id as u16);
+
+        let datetimer = if self.time.len() == 10 {
+            format!("{} 00:00:00", self.time.to_string())
+        } else {
+            self.time.to_string()
+        };
+        let datestamp = Utc
+            .datetime_from_str(&datetimer, "%Y-%m-%d %H:%M:%S")
+            .unwrap()
+            .timestamp_nanos()
+            - 28800000000000;
+        let ts = Timestamp::from_unix(&context, 1497624119, 1234);
+        let uuid =
+            Uuid::new_v1(ts, self.account_cookie.as_bytes()).expect("failed to generate UUID");
+        let order_id: String = uuid.to_string();
+        let trade = Trade {
+            seqno: self.event_id,
+            user_id: self.account_cookie.clone(),
+            price: 0.0,
+            order_id: order_id.clone(),
+            trade_id: order_id.clone(),
+            exchange_id: "".to_string(),
+            commission: 0.0,
+            direction: "BUY".to_string(),
+            offset: "OPEN".to_string(),
+            instrument_id: code.to_string(),
+            exchange_trade_id: "".to_string(),
+            volume: amount,
+            trade_date_time: datestamp,
+        };
+        self.dailytrades.insert(order_id, trade.clone());
     }
 
     pub fn dividend_event(&mut self, code: &str, money_ratio: f64) {
         // 分红事件
+        self.event_id += 1;
         let pos = self.get_position(code).unwrap();
         let money = pos.volume_long_his * money_ratio;
         self.money += money;
@@ -1033,53 +1065,52 @@ impl QA_Account {
         self.trades.insert(trade_id, transaction.clone());
         self.history.push(transaction);
     }
-    pub fn target_weight(&mut self, target_panel: HashMap<String, f64>, slice: &HashMap<String, Kline>, label: &str) {
-
+    pub fn target_weight(
+        &mut self,
+        target_panel: HashMap<String, f64>,
+        slice: &HashMap<String, Kline>,
+        label: &str,
+    ) {
         let total_money = self.accounts.pre_balance;
-        let res = target_panel.par_iter().map(|(code, weight)|{
-            let data = slice.get(code).unwrap();
-            match label {
-                "close" => {
-                    let price = data.close;
-                    let amount = (total_money * weight) / price;
-                    match adjust_market(code).as_ref(){
-                        "stock_cn" => {
-                            (code.clone(), (amount/100.0).floor() as f64 * 100.0)
-                        },
-                        "future_cn" => {
-                            (code.clone(), amount)
-                        },
-                        _ => {
-                            (code.clone(), amount)
+        let res = target_panel
+            .par_iter()
+            .map(|(code, weight)| {
+                let data = slice.get(code).unwrap();
+                match label {
+                    "close" => {
+                        let price = data.close;
+                        let amount = (total_money * weight) / price;
+                        match adjust_market(code).as_ref() {
+                            "stock_cn" => (code.clone(), (amount / 100.0).floor() as f64 * 100.0),
+                            "future_cn" => (code.clone(), amount),
+                            _ => (code.clone(), amount),
                         }
                     }
-                },
-                "open" => {
-                    let price = data.open;
-                    let amount = (total_money * weight) / price;
-                    match adjust_market(code).as_ref(){
-                        "stock_cn" => {
-                            (code.clone(), (amount/100.0).floor() as f64 * 100.0)
-                        },
-                        "future_cn" => {
-                            (code.clone(), amount)
-                        },
-                        _ => {
-                            (code.clone(), amount)
+                    "open" => {
+                        let price = data.open;
+                        let amount = (total_money * weight) / price;
+                        match adjust_market(code).as_ref() {
+                            "stock_cn" => (code.clone(), (amount / 100.0).floor() as f64 * 100.0),
+                            "future_cn" => (code.clone(), amount),
+                            _ => (code.clone(), amount),
                         }
                     }
-                },
-                _ => {
-                    let price = data.open;
-                    let amount = (total_money * weight) / price;
-                    (code.clone(), amount)
+                    _ => {
+                        let price = data.open;
+                        let amount = (total_money * weight) / price;
+                        (code.clone(), amount)
+                    }
                 }
-            }
-        }).collect::<HashMap<String, f64>>();
+            })
+            .collect::<HashMap<String, f64>>();
         self.target(res, slice, label);
-
     }
-    pub fn target(&mut self, target_panel: HashMap<String, f64>, slice: &HashMap<String, Kline>, label:&str) {
+    pub fn target(
+        &mut self,
+        target_panel: HashMap<String, f64>,
+        slice: &HashMap<String, Kline>,
+        label: &str,
+    ) {
         let today = self.time.clone();
 
         let (sender, receiver) = channel();
@@ -1137,15 +1168,16 @@ impl QA_Account {
 
                 let posx = self.get_position_unmut(code);
                 let amount = target.clone();
-                let price =  match label{
+                let price = match label {
                     "close" => current_data.close,
 
                     "open" => current_data.open,
                     _ => {
                         println!("label error, use openprice");
-                        current_data.close}
+                        current_data.close
+                    }
                 };
-                
+
                 if posx.is_none() {
                     if amount > 0.0 {
                         s.send((
@@ -1336,14 +1368,14 @@ impl QA_Account {
                     &"sell_open" => {
                         if price <= limit {
                             println!(
-                            "errorlog:{:#?} sell_open  lowlimit {:#?}/{:#?}/{:#?}/{:#?}/{:#?}/",
-                            today.clone(),
-                            code, //code
-                            price,          //price
-                            amount,          //amount
-                            *action,          //order_type
-                            limit         //limit
-                        );
+                                "errorlog:{:#?} sell_open  lowlimit {:#?}/{:#?}/{:#?}/{:#?}/{:#?}/",
+                                today.clone(),
+                                code,    //code
+                                price,   //price
+                                amount,  //amount
+                                *action, //order_type
+                                limit    //limit
+                            );
                         } else {
                             self.sell_open(code, *amount, &today.clone(), *price);
                         }
@@ -1534,6 +1566,14 @@ impl QA_Account {
     pub fn py_dividendevent(&mut self, code: &str, ratio: f64) {
         self.dividend_event(code, ratio);
     }
+    // #[pyo3(name = "target_amount")]
+    // pub fn py_target_amount(&mut self, target_panel:HashMap<String, f64>, slice:HashMap<String, Kline>, label:&str) {
+    //     self.target(target_panel, &slice, label);
+    // }
+    // #[pyo3(name = "target_weight")]
+    // pub fn py_target_weight(&mut self, target_panel:HashMap<String, f64>, slice:HashMap<String, Kline>, label:&str) {
+    //     self.target_weight(target_panel, &slice, label);
+    // }
 }
 
 #[cfg(test)]

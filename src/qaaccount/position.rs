@@ -69,7 +69,7 @@ pub fn adjust_market(code: &str) -> String {
     match res {
         Some(x) => {
             let market = x.get(0).unwrap().as_str();
-            println!("{:#?} => {:#?}", code, market);
+            // println!("{:#?} => {:#?}", code, market);
             match market {
                 "XSHG" => "stock_cn".to_string(),
                 "XSHE" => "stock_cn".to_string(),
