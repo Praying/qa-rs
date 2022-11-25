@@ -34,11 +34,13 @@ bson = "0.13.0"
 queues = "1.0.2"
 
 redis-async = {version = "0.8", default-features = false, features = ["tokio10"] }
-actix-web-actors = { version = "4.0.0-beta.8", default-features = false }
+actix-web-actors = { version = "4.1", default-features = false }
 actix-redis = "0.10.0-beta.4"
-actix = "0.12.0"
+actix = "0.13"
 actix-rt = "2.5.0"
-
+actix-broker = "0.4.2"
+actix-files = "0.6"
+env_logger = "0.9"
 actix-cors = "0.6.0-beta.7"
 actix-web = "4"
 mongodb = "2"
@@ -62,6 +64,7 @@ lmdb = "0.8.0"
 sled = "0.34.7"
 peroxide = "0.32.1"
 arrow2 = {version="0.14.2", features=["full"]}
+async_once = "0.2.6"
 [dependencies.polars-lazy]
 git = "https://github.com/yutiansut/polars"
 rev = "93771165397938c616a024f95c989cfafa10bdb3"
@@ -124,7 +127,7 @@ features = [
 ]
 [lib]
 name = "qa_rs"
-crate-type = ["cdylib"]
+#crate-type = ["cdylib"]
 
 [profile.release]
 codegen-units = 1

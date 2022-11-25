@@ -5,7 +5,7 @@ use crate::qaenv::localenv::CONFIG;
 use crate::qaprotocol::qifi::account::QIFI;
 use crate::qaprotocol::qifi::func::{from_serde_value, from_string};
 use chrono::Local;
-
+use lazy_static::lazy_static;
 use futures::TryStreamExt;
 pub use mongodb::{
     bson::{doc, Bson, Document},
@@ -17,8 +17,8 @@ pub use mongodb::{
     Client, Collection, IndexModel,
 };
 
+use async_once::AsyncOnce;
 use serde::Serialize;
-
 pub fn struct_to_doc<T>(value: T) -> Document
 where
     T: Serialize + std::fmt::Debug,
@@ -29,7 +29,13 @@ where
         .unwrap()
         .to_owned()
 }
-
+lazy_static! {
+    //pub static ref MARKET_MONGO: Client = create_market_mongo_client();
+    static ref CLIENT: AsyncOnce<QAMongoClient> = AsyncOnce::new(async {
+        let client:QAMongoClient = QAMongoClient::new(&CONFIG.account.uri).await;
+        client
+    });
+}
 #[derive(Debug, Clone)]
 pub struct QAMongoClient {
     pub client: Client,
@@ -41,6 +47,7 @@ impl QAMongoClient {
 
         Self { client }
     }
+
     pub async fn get_qifi(&self, account_cookie: String) -> QIFI {
         let coll = self
             .client
