@@ -5,8 +5,8 @@ use crate::qaenv::localenv::CONFIG;
 use crate::qaprotocol::qifi::account::QIFI;
 use crate::qaprotocol::qifi::func::{from_serde_value, from_string};
 use chrono::Local;
-use lazy_static::lazy_static;
 use futures::TryStreamExt;
+use lazy_static::lazy_static;
 pub use mongodb::{
     bson::{doc, Bson, Document},
     error::Result,

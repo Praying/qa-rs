@@ -1,8 +1,6 @@
-
 use std::fmt::Debug;
 
 use super::orders::OrderRequest;
-
 
 /// Validation errors
 const ERR_BAD_ORDER_ASSET: &str = "bad order asset";
@@ -10,7 +8,6 @@ const ERR_BAD_PRICE_ASSET: &str = "bad price asset";
 const ERR_BAD_PRICE_VALUE: &str = "price must be non-negative";
 const ERR_BAD_QUANTITY_VALUE: &str = "quantity must be non-negative";
 const ERR_BAD_SEQ_ID: &str = "order ID out of range";
-
 
 /* Validators */
 
@@ -38,7 +35,6 @@ where
             max_sequence_id,
         }
     }
-
 
     pub fn validate(&self, request: &OrderRequest<Asset>) -> Result<(), &str> {
         match *request {
@@ -79,7 +75,6 @@ where
         price_asset: Asset,
         qty: f64,
     ) -> Result<(), &str> {
-
         if self.orderbook_order_asset != order_asset {
             return Err(ERR_BAD_ORDER_ASSET);
         }
@@ -95,7 +90,6 @@ where
         Ok(())
     }
 
-
     fn validate_limit(
         &self,
         order_asset: Asset,
@@ -103,7 +97,6 @@ where
         price: f64,
         qty: f64,
     ) -> Result<(), &str> {
-
         if self.orderbook_order_asset != order_asset {
             return Err(ERR_BAD_ORDER_ASSET);
         }
@@ -122,7 +115,6 @@ where
 
         Ok(())
     }
-
 
     fn validate_amend(&self, id: u64, price: f64, qty: f64) -> Result<(), &str> {
         if self.min_sequence_id > id || self.max_sequence_id < id {
@@ -139,7 +131,6 @@ where
 
         Ok(())
     }
-
 
     fn validate_cancel(&self, id: u64) -> Result<(), &str> {
         if self.min_sequence_id > id || self.max_sequence_id < id {

@@ -1,9 +1,7 @@
-
-use std::time::SystemTime;
 use std::fmt::Debug;
+use std::time::SystemTime;
 
 use super::domain::OrderSide;
-
 
 #[derive(Debug)]
 pub enum OrderRequest<Asset>
@@ -42,9 +40,7 @@ where
     },
 }
 
-
 /* Constructors */
-
 
 /// Create request for the new market order
 pub fn new_market_order_request<Asset>(
@@ -57,7 +53,6 @@ pub fn new_market_order_request<Asset>(
 where
     Asset: Debug + Clone,
 {
-
     OrderRequest::NewMarketOrder {
         order_asset,
         price_asset,
@@ -66,7 +61,6 @@ where
         ts,
     }
 }
-
 
 /// Create request for the new limit order
 pub fn new_limit_order_request<Asset>(
@@ -80,7 +74,6 @@ pub fn new_limit_order_request<Asset>(
 where
     Asset: Debug + Clone,
 {
-
     OrderRequest::NewLimitOrder {
         order_asset,
         price_asset,
@@ -90,7 +83,6 @@ where
         ts,
     }
 }
-
 
 /// Create request for changing price/qty for the active limit order.
 ///
@@ -106,7 +98,6 @@ pub fn amend_order_request<Asset>(
 where
     Asset: Debug + Clone,
 {
-
     OrderRequest::AmendOrder {
         id,
         side,
@@ -115,7 +106,6 @@ where
         ts,
     }
 }
-
 
 /// Create request for cancelling active limit order
 pub fn limit_order_cancel_request<Asset>(order_id: u64, side: OrderSide) -> OrderRequest<Asset>

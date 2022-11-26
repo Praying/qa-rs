@@ -14,5 +14,4 @@ pub fn adjust_market(code: &str) -> String {
         }
         None => "stock_cn".to_string(),
     }
-
 }

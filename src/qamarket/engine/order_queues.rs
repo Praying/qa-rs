@@ -1,10 +1,8 @@
-
 use std::cmp::Ordering;
 use std::collections::{BinaryHeap, HashMap};
 use std::time;
 
 use super::domain::OrderSide;
-
 
 #[derive(Clone)]
 struct OrderIndex {
@@ -52,7 +50,6 @@ impl PartialEq for OrderIndex {
 
 impl Eq for OrderIndex {}
 
-
 /// Public methods
 pub struct OrderQueue<T> {
     // use Option in order to replace heap in mutable borrow
@@ -62,7 +59,6 @@ pub struct OrderQueue<T> {
     max_stalled: u64,
     queue_side: OrderSide,
 }
-
 
 impl<T> OrderQueue<T> {
     /// Create new order queue
@@ -78,7 +74,6 @@ impl<T> OrderQueue<T> {
         }
     }
 
-
     pub fn peek(&mut self) -> Option<&T> {
         // get best order ID
         let order_id = self.get_current_order_id()?;
@@ -92,7 +87,6 @@ impl<T> OrderQueue<T> {
         }
     }
 
-
     pub fn pop(&mut self) -> Option<T> {
         // remove order index from queue in any case
         let order_id = self.idx_queue.as_mut()?.pop()?.id;
@@ -103,7 +97,6 @@ impl<T> OrderQueue<T> {
             self.pop()
         }
     }
-
 
     // Add new limit order to the queue
     pub fn insert(&mut self, id: u64, price: f64, ts: time::SystemTime, order: T) -> bool {
@@ -123,7 +116,6 @@ impl<T> OrderQueue<T> {
         true
     }
 
-
     // use it when price was changed
     pub fn amend(&mut self, id: u64, price: f64, ts: time::SystemTime, order: T) -> bool {
         if self.orders.contains_key(&id) {
@@ -136,7 +128,6 @@ impl<T> OrderQueue<T> {
         }
     }
 
-
     pub fn cancel(&mut self, id: u64) -> bool {
         match self.orders.remove(&id) {
             Some(_) => {
@@ -147,9 +138,7 @@ impl<T> OrderQueue<T> {
         }
     }
 
-
     /* Internal methods */
-
 
     /// Used internally when current order is partially matched.
     ///
@@ -164,7 +153,6 @@ impl<T> OrderQueue<T> {
         false
     }
 
-
     /// Verify if queue should be cleaned
     fn clean_check(&mut self) {
         if self.op_counter > self.max_stalled {
@@ -175,7 +163,6 @@ impl<T> OrderQueue<T> {
         }
     }
 
-
     /// Remove dangling indices without orders from queue
     fn remove_stalled(&mut self) {
         if let Some(idx_queue) = self.idx_queue.take() {
@@ -184,7 +171,6 @@ impl<T> OrderQueue<T> {
             self.idx_queue = Some(BinaryHeap::from(active_orders));
         }
     }
-
 
     /// Recreate order-index queue with changed index info
     fn rebuild_idx(&mut self, id: u64, price: f64, ts: time::SystemTime) {
@@ -206,14 +192,12 @@ impl<T> OrderQueue<T> {
         }
     }
 
-
     /// Return ID of current order in queue
     fn get_current_order_id(&self) -> Option<u64> {
         let order_id = self.idx_queue.as_ref()?.peek()?;
         Some(order_id.id)
     }
 }
-
 
 #[cfg(test)]
 mod test {
@@ -224,11 +208,9 @@ mod test {
         pub name: &'static str,
     }
 
-
     fn get_queue_empty(side: OrderSide) -> OrderQueue<TestOrder> {
         OrderQueue::new(side, 5, 10)
     }
-
 
     fn get_queue_bids() -> OrderQueue<TestOrder> {
         let mut bid_queue = get_queue_empty(OrderSide::Bid);
@@ -243,20 +225,23 @@ mod test {
             2,
             1.02,
             time::SystemTime::now(),
-            TestOrder { name: "high bid first" },
+            TestOrder {
+                name: "high bid first"
+            },
         ));
         // same price but later
         assert!(bid_queue.insert(
             3,
             1.02,
             time::SystemTime::now(),
-            TestOrder { name: "high bid second" },
+            TestOrder {
+                name: "high bid second"
+            },
         ));
         assert_eq!(bid_queue.peek().unwrap().name, "high bid first");
 
         bid_queue
     }
-
 
     fn get_queue_asks() -> OrderQueue<TestOrder> {
         let mut ask_queue = get_queue_empty(OrderSide::Ask);
@@ -264,7 +249,9 @@ mod test {
             1,
             1.01,
             time::SystemTime::now(),
-            TestOrder { name: "low ask first" },
+            TestOrder {
+                name: "low ask first"
+            },
         ));
         assert!(ask_queue.insert(
             2,
@@ -276,13 +263,14 @@ mod test {
             3,
             1.01,
             time::SystemTime::now(),
-            TestOrder { name: "low ask second" },
+            TestOrder {
+                name: "low ask second"
+            },
         ));
         assert_eq!(ask_queue.peek().unwrap().name, "low ask first");
 
         ask_queue
     }
-
 
     #[test]
     fn queue_operations_insert_unique() {
@@ -302,10 +290,11 @@ mod test {
             1,
             1.02,
             time::SystemTime::now(),
-            TestOrder { name: "another first bid" },
+            TestOrder {
+                name: "another first bid"
+            },
         ));
     }
-
 
     #[test]
     fn queue_operations_ordering_bid() {
@@ -329,9 +318,9 @@ mod test {
     fn queue_operations_modify_order() {
         let mut bid_queue = get_queue_bids();
 
-        assert!(bid_queue.modify_current_order(
-            TestOrder { name: "current bid partially matched" },
-        ));
+        assert!(bid_queue.modify_current_order(TestOrder {
+            name: "current bid partially matched"
+        },));
 
         assert_eq!(
             bid_queue.pop().unwrap().name,
@@ -340,7 +329,6 @@ mod test {
         assert_eq!(bid_queue.pop().unwrap().name, "high bid second");
         assert_eq!(bid_queue.pop().unwrap().name, "low bid");
     }
-
 
     #[test]
     fn queue_operations_amend() {
@@ -364,14 +352,15 @@ mod test {
             4,
             3.03,
             time::SystemTime::now(),
-            TestOrder { name: "nonexistent" },
+            TestOrder {
+                name: "nonexistent"
+            },
         ));
 
         assert_eq!(ask_queue.pop().unwrap().name, "new first");
         assert_eq!(ask_queue.pop().unwrap().name, "low ask second");
         assert_eq!(ask_queue.pop().unwrap().name, "new last");
     }
-
 
     #[test]
     fn queue_operations_cancel_order1() {
@@ -382,7 +371,6 @@ mod test {
         assert_eq!(bid_queue.pop().unwrap().name, "high bid second");
         assert_eq!(bid_queue.pop().unwrap().name, "low bid");
     }
-
 
     #[test]
     fn queue_operations_cancel_order2() {

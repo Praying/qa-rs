@@ -1,7 +1,7 @@
 use std::f32::consts::E;
 
-use serde::{Deserialize, Serialize};
 use crate::qaaccount::order::QAOrder;
+use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct OrderBook {
     pub order_book_id: String,
@@ -36,9 +36,9 @@ pub struct OrderBook {
     pub total_turnover: f64,
 }
 
-impl OrderBook{
-    pub fn new(order_book_id: &str)->Self{
-        OrderBook{
+impl OrderBook {
+    pub fn new(order_book_id: &str) -> Self {
+        OrderBook {
             order_book_id: order_book_id.to_string(),
             ask_1: 0.0,
 
@@ -74,8 +74,7 @@ impl OrderBook{
         }
     }
 
-    pub fn insert_order(&mut self, order: &QAOrder)->Result<(),String>{
-
+    pub fn insert_order(&mut self, order: &QAOrder) -> Result<(), String> {
         // order insert event
         // 1. check if the order is valid
         // 2. if deal, update the orderbook
@@ -85,9 +84,9 @@ impl OrderBook{
         let limitprice = order.price;
         let left_volume = order.volume_orign;
 
-        if order.direction =="BUY"{
-            if limitprice>= self.ask_1{
-                if left_volume>= self.ask_volume1{
+        if order.direction == "BUY" {
+            if limitprice >= self.ask_1 {
+                if left_volume >= self.ask_volume1 {
                     // deal
                     self.ask_volume1 = 0.0;
                     self.ask_1 = self.ask_2;
@@ -100,19 +99,13 @@ impl OrderBook{
                     self.ask_volume5 = self.ask_volume5 - left_volume;
                     self.ask_5 = 0.0;
                     self.ask_volume5 = 0.0;
-            }else{
+                } else {
+                }
+            } else {
             }
-
-        }else{
-            
+        } else {
         }
 
-        }else{
-
-        }
-
-
-       
         Ok(())
     }
 }

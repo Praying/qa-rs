@@ -44,5 +44,4 @@
 //     .await
 // }
 
-
-fn main(){}
+fn main() {}

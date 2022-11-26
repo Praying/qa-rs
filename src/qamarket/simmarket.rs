@@ -23,8 +23,6 @@ pub struct QASIMMarket {
 
 impl QASIMMarket {
     pub fn new() -> Self {
-
-        
         QASIMMarket {
             reg_account: HashMap::new(),
             orders: HashMap::new(),
