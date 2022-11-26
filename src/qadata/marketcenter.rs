@@ -13,6 +13,19 @@ pub struct QAMarketCenter {
     pub today: HashMap<String, Kline>,
 }
 impl QAMarketCenter {
+    pub fn new_for_realtime() -> Self {
+        let mut data = HashMap::new();
+        let mut today = HashMap::new();
+        let mut date = String::new();
+        let mut dateidx = 0;
+        QAMarketCenter {
+            dateidx,
+            date,
+            data,
+            today,
+        }
+    }
+
     pub fn new(path: &str) -> Self {
         let mut file = File::open(path).expect("Cannot open file.");
         let df = ParquetReader::new(&mut file).finish().unwrap();

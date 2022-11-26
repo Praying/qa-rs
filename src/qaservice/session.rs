@@ -1,10 +1,12 @@
 use std::time::{Duration, Instant};
-
+use log::{error, info, warn};
+use crate::qaenv::localenv::CONFIG;
 use actix::prelude::*;
 use actix_web_actors::ws;
 
-use crate::qaservice::server;
-
+use crate::qaservice::tifiserver;
+use crate::qaservice::tifi;
+use serde_json::value::Value;
 /// How often heartbeat pings are sent
 const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
 
@@ -27,7 +29,7 @@ pub struct WsTradeSession {
     pub name: Option<String>,
 
     /// Chat server
-    pub addr: Addr<server::TradeServer>,
+    pub addr: Addr<tifiserver::TifiServer>,
 }
 
 impl WsTradeSession {
@@ -42,7 +44,7 @@ impl WsTradeSession {
                 println!("Websocket Client heartbeat failed, disconnecting!");
 
                 // notify chat server
-                act.addr.do_send(server::Disconnect { id: act.id });
+                act.addr.do_send(tifiserver::Disconnect { id: act.id });
 
                 // stop actor
                 ctx.stop();
@@ -72,7 +74,7 @@ impl Actor for WsTradeSession {
         // across all routes within application
         let addr = ctx.address();
         self.addr
-            .send(server::Connect {
+            .send(tifiserver::Connect {
                 addr: addr.recipient(),
             })
             .into_actor(self)
@@ -89,16 +91,16 @@ impl Actor for WsTradeSession {
 
     fn stopping(&mut self, _: &mut Self::Context) -> Running {
         // notify chat server
-        self.addr.do_send(server::Disconnect { id: self.id });
+        self.addr.do_send(tifiserver::Disconnect { id: self.id });
         Running::Stop
     }
 }
 
 /// Handle messages from chat server, we simply send it to peer websocket
-impl Handler<server::Message> for WsTradeSession {
+impl Handler<tifiserver::Message> for WsTradeSession {
     type Result = ();
 
-    fn handle(&mut self, msg: server::Message, ctx: &mut Self::Context) {
+    fn handle(&mut self, msg: tifiserver::Message, ctx: &mut Self::Context) {
         ctx.text(msg.0);
     }
 }
@@ -123,71 +125,113 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsTradeSession {
             ws::Message::Pong(_) => {
                 self.hb = Instant::now();
             }
-            ws::Message::Text(text) => {
-                let m = text.trim();
-                // we check for /sss type of messages
-                if m.starts_with('/') {
-                    let v: Vec<&str> = m.splitn(2, ' ').collect();
-                    match v[0] {
-                        "/list" => {
-                            // Send ListRooms message to chat server and wait for
-                            // response
-                            println!("List topics");
-                            self.addr
-                                .send(server::ListTopics)
-                                .into_actor(self)
-                                .then(|res, _, ctx| {
-                                    match res {
-                                        Ok(topics) => {
-                                            for topic in topics {
-                                                ctx.text(topic);
-                                            }
-                                        }
-                                        _ => println!("Something is wrong"),
-                                    }
-                                    fut::ready(())
-                                })
-                                .wait(ctx)
-                            // .wait(ctx) pauses all events in context,
-                            // so actor wont receive any new messages until it get list
-                            // of rooms back
-                        }
-                        "/join" => {
-                            if v.len() == 2 {
-                                self.topic = v[1].to_owned();
-                                self.addr.do_send(server::Join {
-                                    id: self.id,
-                                    name: self.topic.clone(),
-                                });
+            ws::Message::Text(text)=> {
 
-                                ctx.text("joined");
-                            } else {
-                                ctx.text("!!! topic name is required");
-                            }
-                        }
-                        "/name" => {
-                            if v.len() == 2 {
-                                self.name = Some(v[1].to_owned());
-                            } else {
-                                ctx.text("!!! name is required");
-                            }
-                        }
-                        _ => ctx.text(format!("!!! unknown command: {m:?}")),
+                let request: Value = match serde_json::from_str(&text.to_string().as_str()) {
+                    Ok(x) => x,
+                    Err(e) => {
+                        error!("{:?}", e.to_string());
+                        return ctx.text(e.to_string());
                     }
-                } else {
-                    let msg = if let Some(ref name) = self.name {
-                        format!("{name}: {m}")
-                    } else {
-                        m.to_owned()
-                    };
-                    // send message to chat server
-                    self.addr.do_send(server::ClientMessage {
-                        id: self.id,
-                        msg,
-                        topic: self.topic.clone(),
-                    })
+                };
+                if let Some(topic) = request["aid"].as_str() {
+                    match topic {
+                        //{"topic":"aid","key":"000000000"}
+                        "login" => {
+                            let tifilogin = tifi::login{
+                                aid: request["aid"].as_str().unwrap().to_string(),
+                                bid: request["bid"].as_str().unwrap().to_string(),
+                                user_name:request["user_name"].as_str().unwrap().to_string(),
+                                password: request["password"].as_str().unwrap().to_string()
+                            };
+                            self.addr
+                                .send(tifilogin)
+                                .into_actor(self)
+                        }
+                        
+                        _ => {}
+                    }
                 }
             }
+           
+
+            // ws::Message::Text(text) => {
+            //     let m = text.trim();
+            //     // we check for /sss type of messages
+            //     if m.starts_with('/') {
+            //         let v: Vec<&str> = m.splitn(2, ' ').collect();
+            //         match v[0] {
+            //             "/list" => {
+            //                 // Send ListRooms message to chat server and wait for
+            //                 // response
+            //                 println!("List topics");
+            //                 self.addr
+            //                     .send(handler::ListTopics)
+            //                     .into_actor(self)
+            //                     .then(|res, _, ctx| {
+            //                         match res {
+            //                             Ok(topics) => {
+            //                                 for topic in topics {
+            //                                     ctx.text(topic);
+            //                                 }
+            //                             }
+            //                             _ => println!("Something is wrong"),
+            //                         }
+            //                         fut::ready(())
+            //                     })
+            //                     .wait(ctx)
+            //                 // .wait(ctx) pauses all events in context,
+            //                 // so actor wont receive any new messages until it get list
+            //                 // of rooms back
+            //             }
+            //             "/join" => {
+            //                 if v.len() == 2 {
+            //                     self.topic = v[1].to_owned();
+            //                     self.addr.do_send(handler::Join {
+            //                         id: self.id,
+            //                         name: self.topic.clone(),
+            //                     });
+
+            //                     ctx.text("joined");
+            //                 } else {
+            //                     ctx.text("!!! topic name is required");
+            //                 }
+            //             }
+            //             "/name" => {
+            //                 if v.len() == 2 {
+            //                     self.name = Some(v[1].to_owned());
+            //                 } else {
+            //                     ctx.text("!!! name is required");
+            //                 }
+            //             }
+            //             "/list_account" => {
+            //                 if v.len() == 2 {
+            //                     self.addr.do_send(handler::ListAccounts {
+                                    
+            //                         topic: v[1].to_owned(),
+            //                     });
+            //                 } else {
+            //                     ctx.text("!!! trade is required");
+            //                 }
+            //             }
+            //             _ => ctx.text(format!("!!! unknown command: {m:?}")),
+            //         }
+            //     } else {
+            //         let msg = if let Some(ref name) = self.name {
+            //             format!("{name}: {m}")
+            //         } else {
+            //             m.to_owned()
+            //         };
+            //         // send message to chat server
+            //         self.addr.do_send(handler::ClientMessage {
+            //             id: self.id,
+            //             msg,
+            //             topic: self.topic.clone(),
+            //         })
+            //     }
+
+                
+            // }
             ws::Message::Binary(_) => println!("Unexpected binary"),
             ws::Message::Close(reason) => {
                 ctx.close(reason);

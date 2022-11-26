@@ -49,6 +49,14 @@ impl actix::Message for ListTopics {
     type Result = Vec<String>;
 }
 
+pub struct ListAccounts {
+    pub topic: String,
+}
+
+impl actix::Message for ListAccounts {
+    type Result = Vec<String>;
+}
+
 /// Join topic, if topic does not exists create new one.
 #[derive(Message)]
 #[rtype(result = "()")]
@@ -186,7 +194,19 @@ impl Handler<ListTopics> for TradeServer {
         MessageResult(topics)
     }
 }
+impl Handler<ListAccounts> for TradeServer {
+    type Result = MessageResult<ListAccounts>;
 
+    fn handle(&mut self, _: ListAccounts, _: &mut Context<Self>) -> Self::Result {
+        let mut topics = Vec::new();
+
+        for key in self.topics.keys() {
+            topics.push(key.to_owned())
+        }
+
+        MessageResult(topics)
+    }
+}
 /// Join topic, send disconnect message to old topic
 /// send join message to new topic
 impl Handler<Join> for TradeServer {

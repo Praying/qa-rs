@@ -43,6 +43,17 @@ impl QAMarket {
             schedule_queue: queue![],
         }
     }
+    pub fn new_for_realtime(portfolio_name: &str) -> Self {
+        Self {
+            reg_account: HashMap::new(),
+            portfolio_name: portfolio_name.to_string(),
+            data: QAMarketCenter::new_for_realtime(),
+            market_event: DataFrame::default(),
+            today: "1970-01-01".to_string(),
+            schedule_queue: queue![],
+        }
+    }
+
     pub fn set_date(&mut self, date: &str) {
         self.today = date.to_string();
         for acc in self.reg_account.values_mut() {

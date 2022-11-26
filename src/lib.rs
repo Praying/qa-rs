@@ -7,7 +7,7 @@ pub mod qalog;
 pub mod qamarket;
 pub mod qaprotocol;
 pub mod qautil;
-pub mod qaservice;
+//pub mod qaservice;
 use mimalloc::MiMalloc;
 use pyo3::prelude::*;
 use qaaccount::account::QA_Account;

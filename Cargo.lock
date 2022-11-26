@@ -845,6 +845,7 @@ checksum = "99d76085681585d39016f4d3841eb019201fc54d2dd0d92ad1e4fab3bfb32754"
 dependencies = [
  "ahash 0.7.6",
  "base64 0.13.1",
+ "chrono",
  "hex 0.4.3",
  "indexmap",
  "lazy_static",
@@ -852,6 +853,7 @@ dependencies = [
  "serde",
  "serde_bytes",
  "serde_json",
+ "serde_with",
  "time 0.3.17",
  "uuid 1.2.2",
 ]
@@ -4059,16 +4061,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pythonize"
-version = "0.17.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0f7f0c136f5fbc01868185eef462800e49659eb23acca83b9e884367a006acb6"
-dependencies = [
- "pyo3",
- "serde",
-]
-
-[[package]]
 name = "qa-rs"
 version = "0.1.0"
 dependencies = [
@@ -4107,7 +4099,6 @@ dependencies = [
  "polars-lazy",
  "pyo3",
  "pyo3-chrono",
- "pythonize",
  "quadprog",
  "queues",
  "rand 0.7.3",

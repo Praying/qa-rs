@@ -31,7 +31,7 @@ where
 }
 lazy_static! {
     //pub static ref MARKET_MONGO: Client = create_market_mongo_client();
-    static ref CLIENT: AsyncOnce<QAMongoClient> = AsyncOnce::new(async {
+    pub static ref CLIENT: AsyncOnce<QAMongoClient> = AsyncOnce::new(async {
         let client:QAMongoClient = QAMongoClient::new(&CONFIG.account.uri).await;
         client
     });
@@ -47,7 +47,19 @@ impl QAMongoClient {
 
         Self { client }
     }
-
+    pub async fn check_user(&self, account_cookie: &str, password: &str) -> bool {
+        let coll = self
+            .client
+            .database(CONFIG.account.db.as_str())
+            .collection::<QIFI>("account");
+        let doc = doc! {"account_cookie": account_cookie, "password": password};
+        let cursor = coll.count_documents(doc, None).await.unwrap();
+        if cursor > 0 {
+            true
+        } else {
+            false
+        }
+    }
     pub async fn get_qifi(&self, account_cookie: String) -> QIFI {
         let coll = self
             .client

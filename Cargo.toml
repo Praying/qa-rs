@@ -43,7 +43,7 @@ actix-files = "0.6"
 env_logger = "0.9"
 actix-cors = "0.6.0-beta.7"
 actix-web = "4"
-mongodb = "2"
+mongodb = {version = "2", default-features = false, features = ["tokio-sync", "bson-serde_with", "bson-chrono-0_4"] }
 
 mimalloc = { version = "*", default-features = false }
 futures="0.3.5"
@@ -55,7 +55,7 @@ chrono-tz= { version = "0.5.3", features = ["serde"] }
 chrono = { version = "0.4.19", features = ["serde"] }
 pyo3 = { version = "0.17.3", features = ["hashbrown", "extension-module", "multiple-pymethods"] }
 pyo3-chrono = "0.5.0"
-pythonize = "*"
+
 thiserror = "1.0"
 rand = "0.7"
 quadprog = "0.0.1"

@@ -3,7 +3,7 @@ use std::{
     time::Instant,
 };
 
-use crate::qaservice::server;
+use crate::qaservice::tifiserver;
 use crate::qaservice::session;
 use actix::*;
 use actix_files::NamedFile;
@@ -15,10 +15,10 @@ pub async fn index() -> impl Responder {
 }
 
 /// Entry point for our websocket route
-pub async fn chat_route(
+pub async fn trade_route(
     req: HttpRequest,
     stream: web::Payload,
-    srv: web::Data<Addr<server::TradeServer>>,
+    srv: web::Data<Addr<tifiserver::TifiServer>>,
 ) -> Result<HttpResponse, Error> {
     ws::start(
         session::WsTradeSession {

@@ -887,6 +887,37 @@ impl QA_Account {
                     )
                     // self.events.insert(self.datetime.clone(), "order insert".to_string());
                 }
+                "sim" => {
+                    let (direction, offset) = self.get_direction_or_offset(towards);
+                    self.dailyorders.insert(
+                        order_id.clone(),
+                        Order {
+                            seqno: self.event_id.clone(),
+                            user_id: self.account_cookie.clone(),
+                            order_id: order_id.clone(),
+                            exchange_id: "".to_string(),
+                            instrument_id: code.clone().to_string(),
+                            direction,
+                            offset,
+                            volume_orign: amount,
+                            price_type: "LIMIT".to_string(),
+                            limit_price: price,
+                            time_condition: "AND".to_string(),
+                            volume_condition: "GFD".to_string(),
+                            insert_date_time: Utc
+                                .datetime_from_str(datetime, "%Y-%m-%d %H:%M:%S")
+                                .unwrap()
+                                .timestamp_nanos()
+                                - 28800000000000,
+                            exchange_order_id: Uuid::new_v4().to_string(),
+                            status: "FINISHED".to_string(),
+                            volume_left: 0.0,
+                            last_msg: "".to_string(),
+                        },
+                    );
+
+                    // self.events.insert(self.datetime.clone(), "order insert".to_string());
+                }
                 _ => {
                     self.events
                         .insert(self.time.clone(), "order insert".to_string());
@@ -929,6 +960,20 @@ impl QA_Account {
             -3 => (String::from("SELL"), String::from("CLOSE")),
             -4 => (String::from("SELL"), String::from("CLOSETODAY")),
             _ => (String::from(""), String::from("")),
+        };
+        rt
+    }
+
+    pub fn get_towards(&mut self, driection: &str, offset: &str) -> i32 {
+        let rt = match (driection, offset) {
+            ("BUY", "OPEN") => 1,
+            ("BUY", "CLOSE") => 3,
+            ("BUY", "CLOSETODAY") => 4,
+            ("SELL", "OPEN") => -2,
+            ("SELL", "CLOSE") => -3,
+            ("SELL", "CLOSETODAY") => -4,
+
+            _ => 0,
         };
         rt
     }
