@@ -105,9 +105,15 @@ where
 }
 
 /// Create request for cancelling active limit order
-pub fn limit_order_cancel_request<Asset>(order_id: u64, direction: OrderDirection) -> OrderRequest<Asset>
+pub fn limit_order_cancel_request<Asset>(
+    order_id: u64,
+    direction: OrderDirection,
+) -> OrderRequest<Asset>
 where
     Asset: Debug + Clone,
 {
-    OrderRequest::CancelOrder { id: order_id, direction }
+    OrderRequest::CancelOrder {
+        id: order_id,
+        direction,
+    }
 }

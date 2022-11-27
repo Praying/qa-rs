@@ -20,11 +20,7 @@ impl<Asset> OrderRequestValidator<Asset>
 where
     Asset: Debug + Clone + Copy + Eq,
 {
-    pub fn new(
-        orderbook_order_book_id: Asset,
-        min_sequence_id: u64,
-        max_sequence_id: u64,
-    ) -> Self {
+    pub fn new(orderbook_order_book_id: Asset, min_sequence_id: u64, max_sequence_id: u64) -> Self {
         OrderRequestValidator {
             orderbook_order_book_id,
             min_sequence_id,
@@ -57,21 +53,19 @@ where
                 ts: _ts,
             } => self.validate_amend(id, price, volume),
 
-            OrderRequest::CancelOrder { id, direction: _direction } => self.validate_cancel(id),
+            OrderRequest::CancelOrder {
+                id,
+                direction: _direction,
+            } => self.validate_cancel(id),
         }
     }
 
     /* Internal validators */
 
-    fn validate_market(
-        &self,
-        order_book_id: Asset,
-        volume: f64,
-    ) -> Result<(), &str> {
+    fn validate_market(&self, order_book_id: Asset, volume: f64) -> Result<(), &str> {
         if self.orderbook_order_book_id != order_book_id {
             return Err(ERR_BAD_order_book_id);
         }
-
 
         if volume <= 0.0 {
             return Err(ERR_BAD_QUANTITY_VALUE);
@@ -80,17 +74,10 @@ where
         Ok(())
     }
 
-    fn validate_limit(
-        &self,
-        order_book_id: Asset,
-
-        price: f64,
-        volume: f64,
-    ) -> Result<(), &str> {
+    fn validate_limit(&self, order_book_id: Asset, price: f64, volume: f64) -> Result<(), &str> {
         if self.orderbook_order_book_id != order_book_id {
             return Err(ERR_BAD_order_book_id);
         }
-
 
         if price <= 0.0 {
             return Err(ERR_BAD_PRICE_VALUE);

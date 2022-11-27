@@ -129,7 +129,13 @@ where
                     ts: SystemTime::now(),
                 }));
 
-                self.process_market_order(&mut proc_result, order_id, order_book_id, direction, volume);
+                self.process_market_order(
+                    &mut proc_result,
+                    order_id,
+                    order_book_id,
+                    direction,
+                    volume,
+                );
             }
 
             OrderRequest::NewLimitOrder {
@@ -182,17 +188,15 @@ where
         let sell = self.ask_queue.peek()?.price;
         Some((buy, sell))
     }
-    pub fn plot_orderbook(&mut self)  {
+    pub fn plot_orderbook(&mut self) {
         let buy = self.bid_queue.peek();
         let sell = self.ask_queue.peek();
-        match (buy, sell){
+        match (buy, sell) {
             (Some(buy), Some(sell)) => {
                 println!("----- orderbook: {:?} -----\n sell: {:?}  |  {:#?} \n---------------------\nbid: {:?}  |  {:#?} \n", self.order_book_id, sell.price,  sell.volume, buy.price,  buy.volume);
-            },
+            }
             _ => println!("no buy or sell"),
         }
-
-        
     }
     /* Processing logic */
 
@@ -292,10 +296,26 @@ where
                 }
             } else {
                 // just insert new order in queue
-                self.store_new_limit_order(results, order_id, order_book_id, direction, price, volume, ts);
+                self.store_new_limit_order(
+                    results,
+                    order_id,
+                    order_book_id,
+                    direction,
+                    price,
+                    volume,
+                    ts,
+                );
             }
         } else {
-            self.store_new_limit_order(results, order_id, order_book_id, direction, price, volume, ts);
+            self.store_new_limit_order(
+                results,
+                order_id,
+                order_book_id,
+                direction,
+                price,
+                volume,
+                ts,
+            );
         }
     }
 

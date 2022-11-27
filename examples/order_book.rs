@@ -5,7 +5,7 @@ use std::time::SystemTime;
 pub enum BrokerAsset {
     YUT,
 }
-
+// 此处目的主要是实现注册功能, 避免乱七八糟的报单
 fn parse_asset(asset: &str) -> Option<BrokerAsset> {
     match asset {
         "YUT" => Some(BrokerAsset::YUT),
@@ -49,7 +49,12 @@ fn main() {
             0.5,
             SystemTime::now(),
         ),
-        orders::new_market_order_request(order_book_id, OrderDirection::BUY, 1.0, SystemTime::now()),
+        orders::new_market_order_request(
+            order_book_id,
+            OrderDirection::BUY,
+            1.0,
+            SystemTime::now(),
+        ),
         orders::new_limit_order_request(
             order_book_id,
             OrderDirection::SELL,
@@ -75,12 +80,8 @@ fn main() {
         orderbook.plot_orderbook();
         if let Some((buy, sell)) = orderbook.current_spread() {
             println!("Spread => buy: {}, sell: {}\n", buy, sell);
-
-        
         } else {
             println!("Spread => not available\n");
         }
     }
-
-        
 }
