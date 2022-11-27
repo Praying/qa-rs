@@ -86,8 +86,9 @@ impl QASIMMarket {
                 "admin",
                 init_cash,
                 false,
-                "real",
+                "sim",
             );
+            println!("{}={} is registered", account_name, acc.environment);
             self.reg_account.insert(account_name.to_string(), acc);
         }
     }
@@ -126,9 +127,31 @@ impl QASIMMarket {
                 let towards = account.get_towards(direction, offset);
                 let market_order_id = Uuid::new_v4().to_string();
                 let result = account.send_order(code, amount, &self.time, towards, price, &market_order_id, "LIMIT");
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
                 match result {
                     Ok(order) => {
+                        let single_order_book = self.OrderBook.get_mut(code).unwrap();
 
+                        let orderx = orders::new_limit_order_request(
+                            code_asset, 
+                            parse_order_direction(&order.direction).unwrap(),
+                            order.price, order.volume, SystemTime::now());
+                        let result = single_order_book.process_order(orderx);
+                        //print!("match result {:#?} ", result);
+                        // result.iter().map(|x| {
+                        //     println!("order match {:?}", x);
+                        // });
+                        
+                        
                         self.orders.insert(market_order_id, order);
                     }
                     Err(e) => {}
@@ -143,18 +166,19 @@ impl QASIMMarket {
 
     pub fn matchs(&mut self) {
         // trade event
-        for (orderid, order) in self.orders.iter() {
+        for (orderid, single_order_book) in self.OrderBook.iter_mut() {
             //let single_order_book = self.OrderBook.get_mut(&order.order_book_id.to_string()).unwrap();
-            let single_order_book = self.OrderBook.get_mut(&order.instrument_id).unwrap();
+            // let single_order_book = self.OrderBook.get_mut(&order.instrument_id).unwrap();
 
-            let orderx = orders::new_limit_order_request(
-                parse_asset(&order.instrument_id).unwrap(), 
-                parse_order_direction(&order.direction).unwrap(),
-                order.price, order.volume, SystemTime::now());
-            let result = single_order_book.process_order(orderx);
-            result.iter().map(|x| {
-                println!("order match {:?}", x);
-            });
+            // let orderx = orders::new_limit_order_request(
+            //     parse_asset(&order.instrument_id).unwrap(), 
+            //     parse_order_direction(&order.direction).unwrap(),
+            //     order.price, order.volume, SystemTime::now());
+            // let result = single_order_book.process_order(orderx);
+            // print!("match result {:#?} ", result);
+            // result.iter().map(|x| {
+            //     println!("order match {:?}", x);
+            // });
             single_order_book.plot_orderbook();
         }
     }

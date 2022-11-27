@@ -139,7 +139,7 @@ pub struct QA_Account {
     pub dailytrades: BTreeMap<String, Trade>,
     pub dailyorders: BTreeMap<String, Order>,
     #[pyo3(get)]
-    environment: String,
+    pub environment: String,
     #[pyo3(get)]
     event_id: i32,
     #[pyo3(get)]
@@ -823,7 +823,7 @@ impl QA_Account {
             time.to_string()
         };
         let datetime = datetimer.as_str();
-
+        println!("{:#?}", datetime);
         let order_id = match _order_id {
             "" => self.generate_order_id(),
             _ => _order_id.to_string(),
@@ -913,11 +913,7 @@ impl QA_Account {
                             limit_price: price,
                             time_condition: "AND".to_string(),
                             volume_condition: "GFD".to_string(),
-                            insert_date_time: Utc
-                                .datetime_from_str(datetime, "%Y-%m-%d %H:%M:%S")
-                                .unwrap()
-                                .timestamp_nanos()
-                                - 28800000000000,
+                            insert_date_time:Utc::now().timestamp_nanos()-28800000000000,
                             exchange_order_id: Uuid::new_v4().to_string(),
                             status: "FINISHED".to_string(),
                             volume_left: 0.0,
