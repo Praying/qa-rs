@@ -3,8 +3,7 @@ use std::fmt::Debug;
 use super::orders::OrderRequest;
 
 /// Validation errors
-const ERR_BAD_ORDER_ASSET: &str = "bad order asset";
-const ERR_BAD_PRICE_ASSET: &str = "bad price asset";
+const ERR_BAD_order_book_id: &str = "bad order asset";
 const ERR_BAD_PRICE_VALUE: &str = "price must be non-negative";
 const ERR_BAD_QUANTITY_VALUE: &str = "quantity must be non-negative";
 const ERR_BAD_SEQ_ID: &str = "order ID out of range";
@@ -12,8 +11,7 @@ const ERR_BAD_SEQ_ID: &str = "order ID out of range";
 /* Validators */
 
 pub struct OrderRequestValidator<Asset> {
-    orderbook_order_asset: Asset,
-    orderbook_price_asset: Asset,
+    orderbook_order_book_id: Asset,
     min_sequence_id: u64,
     max_sequence_id: u64,
 }
@@ -23,14 +21,12 @@ where
     Asset: Debug + Clone + Copy + Eq,
 {
     pub fn new(
-        orderbook_order_asset: Asset,
-        orderbook_price_asset: Asset,
+        orderbook_order_book_id: Asset,
         min_sequence_id: u64,
         max_sequence_id: u64,
     ) -> Self {
         OrderRequestValidator {
-            orderbook_order_asset,
-            orderbook_price_asset,
+            orderbook_order_book_id,
             min_sequence_id,
             max_sequence_id,
         }
@@ -39,29 +35,27 @@ where
     pub fn validate(&self, request: &OrderRequest<Asset>) -> Result<(), &str> {
         match *request {
             OrderRequest::NewMarketOrder {
-                order_asset,
-                price_asset,
+                order_book_id,
                 side: _side,
-                qty,
+                volume,
                 ts: _ts,
-            } => self.validate_market(order_asset, price_asset, qty),
+            } => self.validate_market(order_book_id, volume),
 
             OrderRequest::NewLimitOrder {
-                order_asset,
-                price_asset,
+                order_book_id,
                 side: _side,
                 price,
-                qty,
+                volume,
                 ts: _ts,
-            } => self.validate_limit(order_asset, price_asset, price, qty),
+            } => self.validate_limit(order_book_id, price, volume),
 
             OrderRequest::AmendOrder {
                 id,
                 price,
                 side: _side,
-                qty,
+                volume,
                 ts: _ts,
-            } => self.validate_amend(id, price, qty),
+            } => self.validate_amend(id, price, volume),
 
             OrderRequest::CancelOrder { id, side: _side } => self.validate_cancel(id),
         }
@@ -71,19 +65,15 @@ where
 
     fn validate_market(
         &self,
-        order_asset: Asset,
-        price_asset: Asset,
-        qty: f64,
+        order_book_id: Asset,
+        volume: f64,
     ) -> Result<(), &str> {
-        if self.orderbook_order_asset != order_asset {
-            return Err(ERR_BAD_ORDER_ASSET);
+        if self.orderbook_order_book_id != order_book_id {
+            return Err(ERR_BAD_order_book_id);
         }
 
-        if self.orderbook_price_asset != price_asset {
-            return Err(ERR_BAD_PRICE_ASSET);
-        }
 
-        if qty <= 0.0 {
+        if volume <= 0.0 {
             return Err(ERR_BAD_QUANTITY_VALUE);
         }
 
@@ -92,31 +82,28 @@ where
 
     fn validate_limit(
         &self,
-        order_asset: Asset,
-        price_asset: Asset,
+        order_book_id: Asset,
+
         price: f64,
-        qty: f64,
+        volume: f64,
     ) -> Result<(), &str> {
-        if self.orderbook_order_asset != order_asset {
-            return Err(ERR_BAD_ORDER_ASSET);
+        if self.orderbook_order_book_id != order_book_id {
+            return Err(ERR_BAD_order_book_id);
         }
 
-        if self.orderbook_price_asset != price_asset {
-            return Err(ERR_BAD_PRICE_ASSET);
-        }
 
         if price <= 0.0 {
             return Err(ERR_BAD_PRICE_VALUE);
         }
 
-        if qty <= 0.0 {
+        if volume <= 0.0 {
             return Err(ERR_BAD_QUANTITY_VALUE);
         }
 
         Ok(())
     }
 
-    fn validate_amend(&self, id: u64, price: f64, qty: f64) -> Result<(), &str> {
+    fn validate_amend(&self, id: u64, price: f64, volume: f64) -> Result<(), &str> {
         if self.min_sequence_id > id || self.max_sequence_id < id {
             return Err(ERR_BAD_SEQ_ID);
         }
@@ -125,7 +112,7 @@ where
             return Err(ERR_BAD_PRICE_VALUE);
         }
 
-        if qty <= 0.0 {
+        if volume <= 0.0 {
             return Err(ERR_BAD_QUANTITY_VALUE);
         }
 

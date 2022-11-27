@@ -12,11 +12,10 @@ where
     Asset: Debug + Clone,
 {
     pub order_id: u64,
-    pub order_asset: Asset,
-    pub price_asset: Asset,
+    pub order_book_id: Asset,
     pub side: OrderSide,
     pub price: f64,
-    pub qty: f64,
+    pub volume: f64,
 }
 
 #[derive(Eq, PartialEq, Debug, Copy, Clone)]

@@ -1,5 +1,7 @@
 extern crate mongodb;
 
+use std::result;
+
 use crate::qaaccount::account::QA_Account;
 use crate::qaenv::localenv::CONFIG;
 use crate::qaprotocol::qifi::account::QIFI;
@@ -14,7 +16,8 @@ pub use mongodb::{
         DeleteOptions, FindOneOptions, FindOptions, InsertOneOptions, UpdateModifications,
         UpdateOptions,
     },
-    Client, Collection, IndexModel,
+    sync::Client,
+    Collection, IndexModel,
 };
 
 use async_once::AsyncOnce;
@@ -31,10 +34,7 @@ where
 }
 lazy_static! {
     //pub static ref MARKET_MONGO: Client = create_market_mongo_client();
-    pub static ref CLIENT: AsyncOnce<QAMongoClient> = AsyncOnce::new(async {
-        let client:QAMongoClient = QAMongoClient::new(&CONFIG.account.uri).await;
-        client
-    });
+    pub static ref CLIENT:QAMongoClient = QAMongoClient::new(&CONFIG.account.uri);
 }
 #[derive(Debug, Clone)]
 pub struct QAMongoClient {
@@ -42,43 +42,42 @@ pub struct QAMongoClient {
 }
 
 impl QAMongoClient {
-    pub async fn new(uri: &str) -> Self {
-        let client = Client::with_uri_str(uri).await.unwrap();
+    pub fn new(uri: &str) -> Self {
+        let client = Client::with_uri_str(uri).unwrap();
 
         Self { client }
     }
-    pub async fn check_user(&self, account_cookie: &str, password: &str) -> bool {
+    pub fn check_user(&self, account_cookie: &str, password: &str) -> bool {
         let coll = self
             .client
             .database(CONFIG.account.db.as_str())
             .collection::<QIFI>("account");
         let doc = doc! {"account_cookie": account_cookie, "password": password};
-        let cursor = coll.count_documents(doc, None).await.unwrap();
+        let cursor = coll.count_documents(doc, None).unwrap();
         if cursor > 0 {
             true
         } else {
             false
         }
     }
-    pub async fn get_qifi(&self, account_cookie: String) -> QIFI {
+    pub fn get_qifi(&self, account_cookie: String) -> QIFI {
         let coll = self
             .client
             .database(CONFIG.account.db.as_str())
             .collection::<QIFI>("account");
         let cursor = coll
             .find_one(doc! {"account_cookie": &account_cookie}, None)
-            .await
             .expect("Failed to execute find.");
         cursor.unwrap()
     }
-    pub async fn get_account(&self, account_cookie: String) -> QA_Account {
+    pub fn get_account(&self, account_cookie: String) -> QA_Account {
         // 转换为结构体
-        let c: QIFI = self.get_qifi(account_cookie).await;
+        let c: QIFI = self.get_qifi(account_cookie);
         // println!("{:#?}", c);
         QA_Account::new_from_qifi(c)
     }
 
-    pub async fn get_accountlist(&self) -> Vec<String> {
+    pub fn get_accountlist(&self) -> Vec<String> {
         let coll = self
             .client
             .database(CONFIG.account.db.as_str())
@@ -91,23 +90,22 @@ impl QAMongoClient {
                     .projection(Option::from(doc! {"account_cookie": 1}))
                     .build(),
             )
-            .await
             .expect("Failed to execute find.");
 
         let mut u: Vec<String> = Vec::new();
-        while let Some(result) = cursor.try_next().await.unwrap() {
-            u.push(result.account_cookie.to_string());
+        for result in cursor {
+            u.push(result.unwrap().account_cookie.to_string());
         }
         u
     }
 
-    pub async fn save_account(&self, mut account: QA_Account) {
+    pub fn save_account(&self, mut account: QA_Account) {
         // 实时切片
         let slice: QIFI = account.get_qifi_slice();
-        self.save_qifi_slice(slice).await;
+        self.save_qifi_slice(slice);
     }
 
-    pub async fn save_qifi_slice(&self, mut slice: QIFI) {
+    pub fn save_qifi_slice(&self, mut slice: QIFI) {
         slice.updatetime = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
         let coll = self
             .client
@@ -120,11 +118,10 @@ impl QAMongoClient {
             v,
             UpdateOptions::builder().upsert(Option::from(true)).build(),
         )
-        .await
         .unwrap();
     }
 
-    pub async fn save_his_qifi_slice(&self, slice: QIFI) {
+    pub fn save_his_qifi_slice(&self, slice: QIFI) {
         let coll = self
             .client
             .database(CONFIG.account.db.as_str())
@@ -136,11 +133,10 @@ impl QAMongoClient {
             v,
             UpdateOptions::builder().upsert(Option::from(true)).build(),
         )
-        .await
         .unwrap();
     }
 
-    pub async fn save_accounthis(&self, mut account: QA_Account) {
+    pub fn save_accounthis(&self, mut account: QA_Account) {
         let slice: QIFI = account.get_qifi_slice();
 
         let coll = self
@@ -154,7 +150,6 @@ impl QAMongoClient {
             v,
             UpdateOptions::builder().upsert(Option::from(true)).build(),
         )
-        .await
         .unwrap();
     }
 }

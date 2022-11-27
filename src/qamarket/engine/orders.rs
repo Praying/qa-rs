@@ -9,19 +9,17 @@ where
     Asset: Debug + Clone,
 {
     NewMarketOrder {
-        order_asset: Asset,
-        price_asset: Asset,
+        order_book_id: Asset,
         side: OrderSide,
-        qty: f64,
+        volume: f64,
         ts: SystemTime,
     },
 
     NewLimitOrder {
-        order_asset: Asset,
-        price_asset: Asset,
+        order_book_id: Asset,
         side: OrderSide,
         price: f64,
-        qty: f64,
+        volume: f64,
         ts: SystemTime,
     },
 
@@ -29,7 +27,7 @@ where
         id: u64,
         side: OrderSide,
         price: f64,
-        qty: f64,
+        volume: f64,
         ts: SystemTime,
     },
 
@@ -44,19 +42,19 @@ where
 
 /// Create request for the new market order
 pub fn new_market_order_request<Asset>(
-    order_asset: Asset,
-    price_asset: Asset,
+    order_book_id: Asset,
+
     side: OrderSide,
-    qty: f64,
+    volume: f64,
     ts: SystemTime,
 ) -> OrderRequest<Asset>
 where
     Asset: Debug + Clone,
 {
     OrderRequest::NewMarketOrder {
-        order_asset,
-        price_asset,
-        qty,
+        order_book_id,
+
+        volume,
         side,
         ts,
     }
@@ -64,27 +62,26 @@ where
 
 /// Create request for the new limit order
 pub fn new_limit_order_request<Asset>(
-    order_asset: Asset,
-    price_asset: Asset,
+    order_book_id: Asset,
+
     side: OrderSide,
     price: f64,
-    qty: f64,
+    volume: f64,
     ts: SystemTime,
 ) -> OrderRequest<Asset>
 where
     Asset: Debug + Clone,
 {
     OrderRequest::NewLimitOrder {
-        order_asset,
-        price_asset,
+        order_book_id,
         side,
         price,
-        qty,
+        volume,
         ts,
     }
 }
 
-/// Create request for changing price/qty for the active limit order.
+/// Create request for changing price/volume for the active limit order.
 ///
 /// Note: do not change order side!
 /// Instead cancel existing order and create a new one.
@@ -92,7 +89,7 @@ pub fn amend_order_request<Asset>(
     id: u64,
     side: OrderSide,
     price: f64,
-    qty: f64,
+    volume: f64,
     ts: SystemTime,
 ) -> OrderRequest<Asset>
 where
@@ -102,7 +99,7 @@ where
         id,
         side,
         price,
-        qty,
+        volume,
         ts,
     }
 }

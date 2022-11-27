@@ -27,7 +27,7 @@ pub enum Success {
         side: OrderSide,
         order_type: OrderType,
         price: f64,
-        qty: f64,
+        volume: f64,
         ts: SystemTime,
     },
 
@@ -36,14 +36,14 @@ pub enum Success {
         side: OrderSide,
         order_type: OrderType,
         price: f64,
-        qty: f64,
+        volume: f64,
         ts: SystemTime,
     },
 
     Amended {
         id: u64,
         price: f64,
-        qty: f64,
+        volume: f64,
         ts: SystemTime,
     },
 
@@ -65,8 +65,7 @@ pub struct Orderbook<Asset>
 where
     Asset: Debug + Clone + Copy + Eq,
 {
-    order_asset: Asset,
-    price_asset: Asset,
+    order_book_id: Asset,
     bid_queue: OrderQueue<Order<Asset>>,
     ask_queue: OrderQueue<Order<Asset>>,
     seq: sequence::TradeSequence,
@@ -82,16 +81,10 @@ where
     /// # Examples
     ///
     /// Basic usage:
-    /// ```
-    /// let mut orderbook = Orderbook::new(Asset::BTC, Asset::USD);
-    /// let result = orderbook.process_order(OrderRequest::MarketOrder{  });
-    /// assert_eq!(orderbook)
-    /// ```
     // todo fix doc test!
-    pub fn new(order_asset: Asset, price_asset: Asset) -> Self {
+    pub fn new(order_book_id: Asset) -> Self {
         Orderbook {
-            order_asset,
-            price_asset,
+            order_book_id,
             bid_queue: OrderQueue::new(
                 OrderSide::Bid,
                 MAX_STALLED_INDICES_IN_QUEUE,
@@ -104,8 +97,7 @@ where
             ),
             seq: sequence::new_sequence_gen(MIN_SEQUENCE_ID, MAX_SEQUENCE_ID),
             order_validator: OrderRequestValidator::new(
-                order_asset,
-                price_asset,
+                order_book_id,
                 MIN_SEQUENCE_ID,
                 MAX_SEQUENCE_ID,
             ),
@@ -124,10 +116,9 @@ where
 
         match order {
             OrderRequest::NewMarketOrder {
-                order_asset,
-                price_asset,
+                order_book_id,
                 side,
-                qty,
+                volume,
                 ts: _ts,
             } => {
                 // generate new ID for order
@@ -138,22 +129,14 @@ where
                     ts: SystemTime::now(),
                 }));
 
-                self.process_market_order(
-                    &mut proc_result,
-                    order_id,
-                    order_asset,
-                    price_asset,
-                    side,
-                    qty,
-                );
+                self.process_market_order(&mut proc_result, order_id, order_book_id, side, volume);
             }
 
             OrderRequest::NewLimitOrder {
-                order_asset,
-                price_asset,
+                order_book_id,
                 side,
                 price,
-                qty,
+                volume,
                 ts,
             } => {
                 let order_id = self.seq.next_id();
@@ -166,11 +149,10 @@ where
                 self.process_limit_order(
                     &mut proc_result,
                     order_id,
-                    order_asset,
-                    price_asset,
+                    order_book_id,
                     side,
                     price,
-                    qty,
+                    volume,
                     ts,
                 );
             }
@@ -179,10 +161,10 @@ where
                 id,
                 side,
                 price,
-                qty,
+                volume,
                 ts,
             } => {
-                self.process_order_amend(&mut proc_result, id, side, price, qty, ts);
+                self.process_order_amend(&mut proc_result, id, side, price, volume, ts);
             }
 
             OrderRequest::CancelOrder { id, side } => {
@@ -200,17 +182,27 @@ where
         let ask = self.ask_queue.peek()?.price;
         Some((bid, ask))
     }
+    pub fn plot_orderbook(&mut self)  {
+        let bid = self.bid_queue.peek();
+        let ask = self.ask_queue.peek();
+        match (bid, ask){
+            (Some(bid), Some(ask)) => {
+                println!("----- orderbook: {:?} -----\n ask: {:?}  |  {:#?} \n---------------------\nbid: {:?}  |  {:#?} \n", self.order_book_id, ask.price,  ask.volume, bid.price,  bid.volume);
+            },
+            _ => println!("no bid or ask"),
+        }
 
+        
+    }
     /* Processing logic */
 
     fn process_market_order(
         &mut self,
         results: &mut OrderProcessingResult,
         order_id: u64,
-        order_asset: Asset,
-        price_asset: Asset,
+        order_book_id: Asset,
         side: OrderSide,
-        qty: f64,
+        volume: f64,
     ) {
         // get copy of the current limit order
         let opposite_order_result = {
@@ -226,11 +218,10 @@ where
                 results,
                 &opposite_order,
                 order_id,
-                order_asset,
-                price_asset,
+                order_book_id,
                 OrderType::Market,
                 side,
-                qty,
+                volume,
             );
 
             if !matching_complete {
@@ -238,10 +229,9 @@ where
                 self.process_market_order(
                     results,
                     order_id,
-                    order_asset,
-                    price_asset,
+                    order_book_id,
                     side,
-                    qty - opposite_order.qty,
+                    volume - opposite_order.volume,
                 );
             }
         } else {
@@ -254,11 +244,10 @@ where
         &mut self,
         results: &mut OrderProcessingResult,
         order_id: u64,
-        order_asset: Asset,
-        price_asset: Asset,
+        order_book_id: Asset,
         side: OrderSide,
         price: f64,
-        qty: f64,
+        volume: f64,
         ts: SystemTime,
     ) {
         // take a look at current opposite limit order
@@ -283,11 +272,10 @@ where
                     results,
                     &opposite_order,
                     order_id,
-                    order_asset,
-                    price_asset,
+                    order_book_id,
                     OrderType::Limit,
                     side,
-                    qty,
+                    volume,
                 );
 
                 if !matching_complete {
@@ -295,38 +283,19 @@ where
                     self.process_limit_order(
                         results,
                         order_id,
-                        order_asset,
-                        price_asset,
+                        order_book_id,
                         side,
                         price,
-                        qty - opposite_order.qty,
+                        volume - opposite_order.volume,
                         ts,
                     );
                 }
             } else {
                 // just insert new order in queue
-                self.store_new_limit_order(
-                    results,
-                    order_id,
-                    order_asset,
-                    price_asset,
-                    side,
-                    price,
-                    qty,
-                    ts,
-                );
+                self.store_new_limit_order(results, order_id, order_book_id, side, price, volume, ts);
             }
         } else {
-            self.store_new_limit_order(
-                results,
-                order_id,
-                order_asset,
-                price_asset,
-                side,
-                price,
-                qty,
-                ts,
-            );
+            self.store_new_limit_order(results, order_id, order_book_id, side, price, volume, ts);
         }
     }
 
@@ -336,7 +305,7 @@ where
         order_id: u64,
         side: OrderSide,
         price: f64,
-        qty: f64,
+        volume: f64,
         ts: SystemTime,
     ) {
         let order_queue = match side {
@@ -350,17 +319,16 @@ where
             ts,
             Order {
                 order_id,
-                order_asset: self.order_asset,
-                price_asset: self.price_asset,
+                order_book_id: self.order_book_id,
                 side,
                 price,
-                qty,
+                volume,
             },
         ) {
             results.push(Ok(Success::Amended {
                 id: order_id,
                 price,
-                qty,
+                volume,
                 ts: SystemTime::now(),
             }));
         } else {
@@ -395,11 +363,10 @@ where
         &mut self,
         results: &mut OrderProcessingResult,
         order_id: u64,
-        order_asset: Asset,
-        price_asset: Asset,
+        order_book_id: Asset,
         side: OrderSide,
         price: f64,
-        qty: f64,
+        volume: f64,
         ts: SystemTime,
     ) {
         let order_queue = match side {
@@ -412,11 +379,10 @@ where
             ts,
             Order {
                 order_id,
-                order_asset,
-                price_asset,
+                order_book_id,
                 side,
                 price,
-                qty,
+                volume,
             },
         ) {
             results.push(Err(Failed::DuplicateOrderID(order_id)))
@@ -428,17 +394,16 @@ where
         results: &mut OrderProcessingResult,
         opposite_order: &Order<Asset>,
         order_id: u64,
-        order_asset: Asset,
-        price_asset: Asset,
+        order_book_id: Asset,
         order_type: OrderType,
         side: OrderSide,
-        qty: f64,
+        volume: f64,
     ) -> bool {
         // real processing time
         let deal_time = SystemTime::now();
 
         // match immediately
-        if qty < opposite_order.qty {
+        if volume < opposite_order.volume {
             // fill new limit and modify opposite limit
 
             // report filled new order
@@ -447,7 +412,7 @@ where
                 side,
                 order_type,
                 price: opposite_order.price,
-                qty,
+                volume,
                 ts: deal_time,
             }));
 
@@ -457,7 +422,7 @@ where
                 side: opposite_order.side,
                 order_type: OrderType::Limit,
                 price: opposite_order.price,
-                qty,
+                volume,
                 ts: deal_time,
             }));
 
@@ -469,14 +434,13 @@ where
                 };
                 opposite_queue.modify_current_order(Order {
                     order_id: opposite_order.order_id,
-                    order_asset,
-                    price_asset,
+                    order_book_id,
                     side: opposite_order.side,
                     price: opposite_order.price,
-                    qty: opposite_order.qty - qty,
+                    volume: opposite_order.volume - volume,
                 });
             }
-        } else if qty > opposite_order.qty {
+        } else if volume > opposite_order.volume {
             // partially fill new limit order, fill opposite limit and notify to process the rest
 
             // report new order partially filled
@@ -485,7 +449,7 @@ where
                 side,
                 order_type,
                 price: opposite_order.price,
-                qty: opposite_order.qty,
+                volume: opposite_order.volume,
                 ts: deal_time,
             }));
 
@@ -495,7 +459,7 @@ where
                 side: opposite_order.side,
                 order_type: OrderType::Limit,
                 price: opposite_order.price,
-                qty: opposite_order.qty,
+                volume: opposite_order.volume,
                 ts: deal_time,
             }));
 
@@ -519,7 +483,7 @@ where
                 side,
                 order_type,
                 price: opposite_order.price,
-                qty,
+                volume,
                 ts: deal_time,
             }));
             // report filled opposite limit order
@@ -528,7 +492,7 @@ where
                 side: opposite_order.side,
                 order_type: OrderType::Limit,
                 price: opposite_order.price,
-                qty,
+                volume,
                 ts: deal_time,
             }));
 
@@ -561,7 +525,7 @@ mod test {
 
     #[test]
     fn cancel_nonexisting() {
-        let mut orderbook = Orderbook::new(Asset::BTC, Asset::USD);
+        let mut orderbook = Orderbook::new(Asset::BTC);
         let request = orders::limit_order_cancel_request(1, OrderSide::Bid);
         let mut result = orderbook.process_order(request);
 
