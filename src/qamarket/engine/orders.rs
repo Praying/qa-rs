@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 use std::time::SystemTime;
 
-use super::domain::OrderSide;
+use super::domain::OrderDirection;
 
 #[derive(Debug)]
 pub enum OrderRequest<Asset>
@@ -10,14 +10,14 @@ where
 {
     NewMarketOrder {
         order_book_id: Asset,
-        side: OrderSide,
+        direction: OrderDirection,
         volume: f64,
         ts: SystemTime,
     },
 
     NewLimitOrder {
         order_book_id: Asset,
-        side: OrderSide,
+        direction: OrderDirection,
         price: f64,
         volume: f64,
         ts: SystemTime,
@@ -25,7 +25,7 @@ where
 
     AmendOrder {
         id: u64,
-        side: OrderSide,
+        direction: OrderDirection,
         price: f64,
         volume: f64,
         ts: SystemTime,
@@ -33,7 +33,7 @@ where
 
     CancelOrder {
         id: u64,
-        side: OrderSide,
+        direction: OrderDirection,
         //ts: SystemTime,
     },
 }
@@ -44,7 +44,7 @@ where
 pub fn new_market_order_request<Asset>(
     order_book_id: Asset,
 
-    side: OrderSide,
+    direction: OrderDirection,
     volume: f64,
     ts: SystemTime,
 ) -> OrderRequest<Asset>
@@ -55,7 +55,7 @@ where
         order_book_id,
 
         volume,
-        side,
+        direction,
         ts,
     }
 }
@@ -64,7 +64,7 @@ where
 pub fn new_limit_order_request<Asset>(
     order_book_id: Asset,
 
-    side: OrderSide,
+    direction: OrderDirection,
     price: f64,
     volume: f64,
     ts: SystemTime,
@@ -74,7 +74,7 @@ where
 {
     OrderRequest::NewLimitOrder {
         order_book_id,
-        side,
+        direction,
         price,
         volume,
         ts,
@@ -83,11 +83,11 @@ where
 
 /// Create request for changing price/volume for the active limit order.
 ///
-/// Note: do not change order side!
+/// Note: do not change order direction!
 /// Instead cancel existing order and create a new one.
 pub fn amend_order_request<Asset>(
     id: u64,
-    side: OrderSide,
+    direction: OrderDirection,
     price: f64,
     volume: f64,
     ts: SystemTime,
@@ -97,7 +97,7 @@ where
 {
     OrderRequest::AmendOrder {
         id,
-        side,
+        direction,
         price,
         volume,
         ts,
@@ -105,9 +105,9 @@ where
 }
 
 /// Create request for cancelling active limit order
-pub fn limit_order_cancel_request<Asset>(order_id: u64, side: OrderSide) -> OrderRequest<Asset>
+pub fn limit_order_cancel_request<Asset>(order_id: u64, direction: OrderDirection) -> OrderRequest<Asset>
 where
     Asset: Debug + Clone,
 {
-    OrderRequest::CancelOrder { id: order_id, side }
+    OrderRequest::CancelOrder { id: order_id, direction }
 }

@@ -36,14 +36,14 @@ where
         match *request {
             OrderRequest::NewMarketOrder {
                 order_book_id,
-                side: _side,
+                direction: _direction,
                 volume,
                 ts: _ts,
             } => self.validate_market(order_book_id, volume),
 
             OrderRequest::NewLimitOrder {
                 order_book_id,
-                side: _side,
+                direction: _direction,
                 price,
                 volume,
                 ts: _ts,
@@ -52,12 +52,12 @@ where
             OrderRequest::AmendOrder {
                 id,
                 price,
-                side: _side,
+                direction: _direction,
                 volume,
                 ts: _ts,
             } => self.validate_amend(id, price, volume),
 
-            OrderRequest::CancelOrder { id, side: _side } => self.validate_cancel(id),
+            OrderRequest::CancelOrder { id, direction: _direction } => self.validate_cancel(id),
         }
     }
 

@@ -2,14 +2,14 @@ use std::cmp::Ordering;
 use std::collections::{BinaryHeap, HashMap};
 use std::time;
 
-use super::domain::OrderSide;
+use super::domain::OrderDirection;
 
 #[derive(Clone)]
 struct OrderIndex {
     id: u64,
     price: f64,
     timestamp: time::SystemTime,
-    order_side: OrderSide,
+    order_side: OrderDirection,
 }
 
 // Arrange at first by price and after that by time
@@ -17,13 +17,13 @@ impl Ord for OrderIndex {
     fn cmp(&self, other: &Self) -> Ordering {
         if self.price < other.price {
             match self.order_side {
-                OrderSide::Bid => Ordering::Less,
-                OrderSide::Ask => Ordering::Greater,
+                OrderDirection::BUY => Ordering::Less,
+                OrderDirection::SELL => Ordering::Greater,
             }
         } else if self.price > other.price {
             match self.order_side {
-                OrderSide::Bid => Ordering::Greater,
-                OrderSide::Ask => Ordering::Less,
+                OrderDirection::BUY => Ordering::Greater,
+                OrderDirection::SELL => Ordering::Less,
             }
         } else {
             // FIFO
@@ -57,20 +57,20 @@ pub struct OrderQueue<T> {
     orders: HashMap<u64, T>,
     op_counter: u64,
     max_stalled: u64,
-    queue_side: OrderSide,
+    queue_side: OrderDirection,
 }
 
 impl<T> OrderQueue<T> {
     /// Create new order queue
     ///
     /// Queue is universal and could be used for both asks and bids
-    pub fn new(side: OrderSide, max_stalled: u64, capacity: usize) -> Self {
+    pub fn new(direction: OrderDirection, max_stalled: u64, capacity: usize) -> Self {
         OrderQueue {
             idx_queue: Some(BinaryHeap::with_capacity(capacity)),
             orders: HashMap::with_capacity(capacity),
             op_counter: 0,
             max_stalled,
-            queue_side: side,
+            queue_side: direction,
         }
     }
 
@@ -208,12 +208,12 @@ mod test {
         pub name: &'static str,
     }
 
-    fn get_queue_empty(side: OrderSide) -> OrderQueue<TestOrder> {
-        OrderQueue::new(side, 5, 10)
+    fn get_queue_empty(direction: OrderDirection) -> OrderQueue<TestOrder> {
+        OrderQueue::new(direction, 5, 10)
     }
 
     fn get_queue_bids() -> OrderQueue<TestOrder> {
-        let mut bid_queue = get_queue_empty(OrderSide::Bid);
+        let mut bid_queue = get_queue_empty(OrderDirection::BUY);
 
         assert!(bid_queue.insert(
             1,
@@ -244,7 +244,7 @@ mod test {
     }
 
     fn get_queue_asks() -> OrderQueue<TestOrder> {
-        let mut ask_queue = get_queue_empty(OrderSide::Ask);
+        let mut ask_queue = get_queue_empty(OrderDirection::SELL);
         assert!(ask_queue.insert(
             1,
             1.01,
@@ -274,7 +274,7 @@ mod test {
 
     #[test]
     fn queue_operations_insert_unique() {
-        let mut bid_queue = get_queue_empty(OrderSide::Bid);
+        let mut bid_queue = get_queue_empty(OrderDirection::BUY);
         assert_eq!(bid_queue.peek(), None);
 
         // insert unique

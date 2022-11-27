@@ -1,9 +1,9 @@
 use std::fmt::Debug;
 
 #[derive(Debug, Copy, Clone)]
-pub enum OrderSide {
-    Bid,
-    Ask,
+pub enum OrderDirection {
+    BUY,
+    SELL,
 }
 
 #[derive(Debug, Clone)]
@@ -13,7 +13,7 @@ where
 {
     pub order_id: u64,
     pub order_book_id: Asset,
-    pub side: OrderSide,
+    pub direction: OrderDirection,
     pub price: f64,
     pub volume: f64,
 }
