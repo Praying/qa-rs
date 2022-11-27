@@ -618,10 +618,10 @@ impl QA_Account {
     /// buy| sell| buy_open| sell_open| buy_close| sell_close|
     /// send_order
     pub fn buy(&mut self, code: &str, amount: f64, time: &str, price: f64) -> Result<QAOrder, ()> {
-        self.send_order(code, amount, time, 1, price, "BUY")
+        self.send_order(code, amount, time, 1, price, "", "LIMIT")
     }
     pub fn sell(&mut self, code: &str, amount: f64, time: &str, price: f64) -> Result<QAOrder, ()> {
-        self.send_order(code, amount, time, -1, price, "SELL")
+        self.send_order(code, amount, time, -1, price, "", "LIMIT")
     }
     pub fn buy_open(
         &mut self,
@@ -630,7 +630,7 @@ impl QA_Account {
         time: &str,
         price: f64,
     ) -> Result<QAOrder, ()> {
-        self.send_order(code, amount, time, 2, price, "BUY_OPEN")
+        self.send_order(code, amount, time, 2, price, "", "LIMIT")
     }
     pub fn sell_open(
         &mut self,
@@ -639,7 +639,7 @@ impl QA_Account {
         time: &str,
         price: f64,
     ) -> Result<QAOrder, ()> {
-        self.send_order(code, amount, time, -2, price, "SELL_OPEN")
+        self.send_order(code, amount, time, -2, price, "", "LIMIT")
     }
     pub fn buy_close(
         &mut self,
@@ -648,7 +648,7 @@ impl QA_Account {
         time: &str,
         price: f64,
     ) -> Result<QAOrder, ()> {
-        self.send_order(code, amount, time, 3, price, "BUY_CLOSE")
+        self.send_order(code, amount, time, 3, price, "", "LIMIT")
     }
     pub fn sell_close(
         &mut self,
@@ -657,7 +657,7 @@ impl QA_Account {
         time: &str,
         price: f64,
     ) -> Result<QAOrder, ()> {
-        self.send_order(code, amount, time, -3, price, "SELL_CLOSE")
+        self.send_order(code, amount, time, -3, price, "", "LIMIT")
     }
     pub fn buy_closetoday(
         &mut self,
@@ -666,7 +666,7 @@ impl QA_Account {
         time: &str,
         price: f64,
     ) -> Result<QAOrder, ()> {
-        self.send_order(code, amount, time, 4, price, "BUY_CLOSETODAY")
+        self.send_order(code, amount, time, 4, price, "", "LIMIT")
     }
     pub fn sell_closetoday(
         &mut self,
@@ -675,7 +675,7 @@ impl QA_Account {
         time: &str,
         price: f64,
     ) -> Result<QAOrder, ()> {
-        self.send_order(code, amount, time, -4, price, "SELL_CLOSETODAY")
+        self.send_order(code, amount, time, -4, price, "", "LIMIT")
     }
     pub fn get_tradingday(&mut self) -> String {
         let mut u = QATradeDate::new();
@@ -787,14 +787,24 @@ impl QA_Account {
         towards: i32,
         price: f64,
         order_id: &str,
+        price_type: &str,
     ) -> Option<QAOrder> {
-        let order = self.send_order(code, amount, time, towards, price, order_id);
+        let order = self.send_order(code, amount, time, towards, price, order_id, price_type);
         let result = if order.is_ok() {
             Some(order.unwrap())
         } else {
             None
         };
         result
+    }
+
+    pub fn generate_order_id(&mut self) -> String {
+        let context = Context::new(self.event_id as u16);
+        let ts = Timestamp::from_unix(&context, 1497624119, 1234);
+        let uuid =
+            Uuid::new_v1(ts, self.account_cookie.as_bytes()).expect("failed to generate UUID");
+
+        uuid.to_string()
     }
     pub fn send_order(
         &mut self,
@@ -804,6 +814,7 @@ impl QA_Account {
         towards: i32,
         price: f64,
         _order_id: &str,
+        price_type: &str,
     ) -> Result<QAOrder, ()> {
         self.event_id += 1;
         let datetimer = if time.len() == 10 {
@@ -813,12 +824,10 @@ impl QA_Account {
         };
         let datetime = datetimer.as_str();
 
-        let context = Context::new(self.event_id as u16);
-        let ts = Timestamp::from_unix(&context, 1497624119, 1234);
-        let uuid =
-            Uuid::new_v1(ts, self.account_cookie.as_bytes()).expect("failed to generate UUID");
-
-        let order_id: String = uuid.to_string();
+        let order_id = match _order_id {
+            "" => self.generate_order_id(),
+            _ => _order_id.to_string(),
+        };
 
         if self.order_check(code, amount, price, towards, order_id.clone()) {
             let mut order = QAOrder::new(
@@ -858,7 +867,7 @@ impl QA_Account {
                             direction,
                             offset,
                             volume_orign: amount,
-                            price_type: "LIMIT".to_string(),
+                            price_type: price_type.to_string(),
                             limit_price: price,
                             time_condition: "AND".to_string(),
                             volume_condition: "GFD".to_string(),
@@ -900,7 +909,7 @@ impl QA_Account {
                             direction,
                             offset,
                             volume_orign: amount,
-                            price_type: "LIMIT".to_string(),
+                            price_type: price_type.to_string(),
                             limit_price: price,
                             time_condition: "AND".to_string(),
                             volume_condition: "GFD".to_string(),
