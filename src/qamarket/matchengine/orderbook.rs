@@ -1,6 +1,5 @@
 use std::fmt::Debug;
-use std::time::SystemTime;
-
+use chrono::Utc;
 use super::domain::{Order, OrderDirection, OrderType};
 use super::order_queues::OrderQueue;
 use super::orders::OrderRequest;
@@ -19,7 +18,7 @@ pub enum Success {
     Accepted {
         id: u64,
         order_type: OrderType,
-        ts: SystemTime,
+        ts: i64,
     },
 
     Filled {
@@ -28,7 +27,7 @@ pub enum Success {
         order_type: OrderType,
         price: f64,
         volume: f64,
-        ts: SystemTime,
+        ts: i64,
     },
 
     PartiallyFilled {
@@ -37,19 +36,19 @@ pub enum Success {
         order_type: OrderType,
         price: f64,
         volume: f64,
-        ts: SystemTime,
+        ts: i64,
     },
 
     Amended {
         id: u64,
         price: f64,
         volume: f64,
-        ts: SystemTime,
+        ts: i64,
     },
 
     Cancelled {
         id: u64,
-        ts: SystemTime,
+        ts: i64,
     },
 }
 
@@ -126,7 +125,7 @@ where
                 proc_result.push(Ok(Success::Accepted {
                     id: order_id,
                     order_type: OrderType::Market,
-                    ts: SystemTime::now(),
+                    ts: Utc::now().timestamp_nanos()-28800000000000,
                 }));
 
                 self.process_market_order(
@@ -149,7 +148,7 @@ where
                 proc_result.push(Ok(Success::Accepted {
                     id: order_id,
                     order_type: OrderType::Limit,
-                    ts: SystemTime::now(),
+                    ts: Utc::now().timestamp_nanos()-28800000000000,
                 }));
 
                 self.process_limit_order(
@@ -252,7 +251,7 @@ where
         direction: OrderDirection,
         price: f64,
         volume: f64,
-        ts: SystemTime,
+        ts: i64,
     ) {
         // take a look at current opposite limit order
         let opposite_order_result = {
@@ -326,7 +325,7 @@ where
         direction: OrderDirection,
         price: f64,
         volume: f64,
-        ts: SystemTime,
+        ts: i64,
     ) {
         let order_queue = match direction {
             OrderDirection::BUY => &mut self.bid_queue,
@@ -349,7 +348,7 @@ where
                 id: order_id,
                 price,
                 volume,
-                ts: SystemTime::now(),
+                ts: Utc::now().timestamp_nanos()-28800000000000,
             }));
         } else {
             results.push(Err(Failed::OrderNotFound(order_id)));
@@ -370,7 +369,7 @@ where
         if order_queue.cancel(order_id) {
             results.push(Ok(Success::Cancelled {
                 id: order_id,
-                ts: SystemTime::now(),
+                ts: Utc::now().timestamp_nanos()-28800000000000,
             }));
         } else {
             results.push(Err(Failed::OrderNotFound(order_id)));
@@ -387,7 +386,7 @@ where
         direction: OrderDirection,
         price: f64,
         volume: f64,
-        ts: SystemTime,
+        ts: i64,
     ) {
         let order_queue = match direction {
             OrderDirection::BUY => &mut self.bid_queue,
@@ -420,7 +419,7 @@ where
         volume: f64,
     ) -> bool {
         // real processing time
-        let deal_time = SystemTime::now();
+        let deal_time = Utc::now().timestamp_nanos()-28800000000000;
 
         // match immediately
         if volume < opposite_order.volume {

@@ -1,7 +1,7 @@
 use crate::qaaccount::account::QA_Account;
 use crate::qaaccount::order::QAOrder;
-use crate::qamarket::matchengine::{domain::OrderDirection, orders::OrderRequest, orderbook::Orderbook, orders};
-use std::time::SystemTime;
+use crate::qamarket::matchengine::{domain::OrderDirection, orders::OrderRequest, orderbook::{Orderbook, Success}, orders};
+use chrono::Utc;
 use uuid::Uuid;
 //use crate::qamarket::order_book::OrderBook;
 
@@ -128,15 +128,7 @@ impl QASIMMarket {
                 let market_order_id = Uuid::new_v4().to_string();
                 let result = account.send_order(code, amount, &self.time, towards, price, &market_order_id, "LIMIT");
                 
-                
-                
-                
-                
-                
-                
-                
-                
-                
+
                 match result {
                     Ok(order) => {
                         let single_order_book = self.OrderBook.get_mut(code).unwrap();
@@ -144,8 +136,39 @@ impl QASIMMarket {
                         let orderx = orders::new_limit_order_request(
                             code_asset, 
                             parse_order_direction(&order.direction).unwrap(),
-                            order.price, order.volume, SystemTime::now());
+                            order.price, order.volume,  Utc::now().timestamp_nanos()-28800000000000);
                         let result = single_order_book.process_order(orderx);
+                        result.iter().for_each(|res| {
+                            match res {
+                                Ok(event) =>{
+                                    match event{
+                                        Success::Accepted { id, order_type, ts } => {
+                                            println!("Accepted order {} of type {:?} at {:?}", id, order_type, ts);
+                                        }
+                                        Success::Filled { order_id, order_type, ts, price, volume, direction } => {
+                                            println!("Matched order {} of type {:?} at {:?} for {} units at {}", order_id, order_type, ts, volume, price);
+                                        }
+                                        Success::Cancelled { id, ts } => {
+                                            println!("Cancelled order {} of at {:?}", id,  ts);
+                                        }
+                                        Success::PartiallyFilled { order_id, direction, order_type, price, volume, ts } =>{
+                                            println!("Partially filled order {} of type {:?} at {:?} for {} units at {}", order_id, order_type, ts, volume, price);
+                                        },
+                                        Success::Amended { id, price, volume, ts } => {
+                                            println!("Amended order {} at {:?} to {} units at {}", id, ts, volume, price);
+                                        },
+                                        
+                                    }
+
+                                }
+                                Err(e) => {
+                                    println!("error: {:?}", e);
+                                }
+                                
+
+                            };
+                            
+                        });
                         //print!("match result {:#?} ", result);
                         // result.iter().map(|x| {
                         //     println!("order match {:?}", x);
@@ -161,8 +184,9 @@ impl QASIMMarket {
                 println!("{} is not supported", code);
             }
         }
-        
     }
+        
+    
 
     pub fn matchs(&mut self) {
         // trade event

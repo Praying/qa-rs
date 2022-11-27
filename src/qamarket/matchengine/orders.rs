@@ -1,5 +1,4 @@
 use std::fmt::Debug;
-use std::time::SystemTime;
 
 use super::domain::OrderDirection;
 
@@ -12,7 +11,7 @@ where
         order_book_id: Asset,
         direction: OrderDirection,
         volume: f64,
-        ts: SystemTime,
+        ts: i64,
     },
 
     NewLimitOrder {
@@ -20,7 +19,7 @@ where
         direction: OrderDirection,
         price: f64,
         volume: f64,
-        ts: SystemTime,
+        ts: i64,
     },
 
     AmendOrder {
@@ -28,13 +27,13 @@ where
         direction: OrderDirection,
         price: f64,
         volume: f64,
-        ts: SystemTime,
+        ts: i64,
     },
 
     CancelOrder {
         id: u64,
         direction: OrderDirection,
-        //ts: SystemTime,
+        //ts: i64,
     },
 }
 
@@ -46,7 +45,7 @@ pub fn new_market_order_request<Asset>(
 
     direction: OrderDirection,
     volume: f64,
-    ts: SystemTime,
+    ts: i64,
 ) -> OrderRequest<Asset>
 where
     Asset: Debug + Clone,
@@ -67,7 +66,7 @@ pub fn new_limit_order_request<Asset>(
     direction: OrderDirection,
     price: f64,
     volume: f64,
-    ts: SystemTime,
+    ts: i64,
 ) -> OrderRequest<Asset>
 where
     Asset: Debug + Clone,
@@ -90,7 +89,7 @@ pub fn amend_order_request<Asset>(
     direction: OrderDirection,
     price: f64,
     volume: f64,
-    ts: SystemTime,
+    ts: i64,
 ) -> OrderRequest<Asset>
 where
     Asset: Debug + Clone,

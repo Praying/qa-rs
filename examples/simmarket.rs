@@ -26,11 +26,11 @@ fn main() {
     // println!("{:?}", Local::now().timestamp_nanos()-28800000000000);
 
     // println!("{:?}", Utc::now().timestamp_nanos()-28800000000000);
-    // let  utctime = Utc
-    // .datetime_from_str(
-    //     "2022-11-27 22:01:22", "%Y-%m-%d %H:%M:%S")
-    // .unwrap()
-    // .timestamp_nanos()
-    // - 28800000000000;
+    let  utctime = Utc
+    .datetime_from_str(
+        "2022-11-27 22:01:22", "%Y-%m-%d %H:%M:%S")
+    .unwrap()
+    .timestamp_nanos()
+    - 28800000000000;
     // println!("{:?}", utctime);
 }

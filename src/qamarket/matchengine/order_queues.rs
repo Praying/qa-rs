@@ -1,14 +1,13 @@
 use std::cmp::Ordering;
 use std::collections::{BinaryHeap, HashMap};
-use std::time;
-
+use chrono::Utc;
 use super::domain::OrderDirection;
 
 #[derive(Clone)]
 struct OrderIndex {
     id: u64,
     price: f64,
-    timestamp: time::SystemTime,
+    timestamp: i64,
     order_side: OrderDirection,
 }
 
@@ -99,7 +98,7 @@ impl<T> OrderQueue<T> {
     }
 
     // Add new limit order to the queue
-    pub fn insert(&mut self, id: u64, price: f64, ts: time::SystemTime, order: T) -> bool {
+    pub fn insert(&mut self, id: u64, price: f64, ts: i64, order: T) -> bool {
         if self.orders.contains_key(&id) {
             // do not update existing order
             return false;
@@ -117,7 +116,7 @@ impl<T> OrderQueue<T> {
     }
 
     // use it when price was changed
-    pub fn amend(&mut self, id: u64, price: f64, ts: time::SystemTime, order: T) -> bool {
+    pub fn amend(&mut self, id: u64, price: f64, ts: i64, order: T) -> bool {
         if self.orders.contains_key(&id) {
             // store new order data
             self.orders.insert(id, order);
@@ -173,7 +172,7 @@ impl<T> OrderQueue<T> {
     }
 
     /// Recreate order-index queue with changed index info
-    fn rebuild_idx(&mut self, id: u64, price: f64, ts: time::SystemTime) {
+    fn rebuild_idx(&mut self, id: u64, price: f64, ts: i64) {
         if let Some(idx_queue) = self.idx_queue.take() {
             // deconstruct queue
             let mut active_orders = idx_queue.into_vec();
@@ -218,13 +217,13 @@ mod test {
         assert!(bid_queue.insert(
             1,
             1.01,
-            time::SystemTime::now(),
+            Utc::now().timestamp_nanos()-28800000000000,
             TestOrder { name: "low bid" },
         ));
         assert!(bid_queue.insert(
             2,
             1.02,
-            time::SystemTime::now(),
+            Utc::now().timestamp_nanos()-28800000000000,
             TestOrder {
                 name: "high bid first"
             },
@@ -233,7 +232,7 @@ mod test {
         assert!(bid_queue.insert(
             3,
             1.02,
-            time::SystemTime::now(),
+            Utc::now().timestamp_nanos()-28800000000000,
             TestOrder {
                 name: "high bid second"
             },
@@ -248,7 +247,7 @@ mod test {
         assert!(ask_queue.insert(
             1,
             1.01,
-            time::SystemTime::now(),
+            Utc::now().timestamp_nanos()-28800000000000,
             TestOrder {
                 name: "low ask first"
             },
@@ -256,13 +255,13 @@ mod test {
         assert!(ask_queue.insert(
             2,
             1.02,
-            time::SystemTime::now(),
+            Utc::now().timestamp_nanos()-28800000000000,
             TestOrder { name: "high ask" },
         ));
         assert!(ask_queue.insert(
             3,
             1.01,
-            time::SystemTime::now(),
+            Utc::now().timestamp_nanos()-28800000000000,
             TestOrder {
                 name: "low ask second"
             },
@@ -281,7 +280,7 @@ mod test {
         assert!(bid_queue.insert(
             1,
             1.01,
-            time::SystemTime::now(),
+            Utc::now().timestamp_nanos()-28800000000000,
             TestOrder { name: "first bid" },
         ));
 
@@ -289,7 +288,7 @@ mod test {
         assert!(!bid_queue.insert(
             1,
             1.02,
-            time::SystemTime::now(),
+            Utc::now().timestamp_nanos()-28800000000000,
             TestOrder {
                 name: "another first bid"
             },
@@ -338,20 +337,20 @@ mod test {
         assert!(ask_queue.amend(
             2,
             0.99,
-            time::SystemTime::now(),
+            Utc::now().timestamp_nanos()-28800000000000,
             TestOrder { name: "new first" },
         ));
         assert!(ask_queue.amend(
             1,
             1.01,
-            time::SystemTime::now(),
+            Utc::now().timestamp_nanos()-28800000000000,
             TestOrder { name: "new last" },
         ));
         // non-exist order
         assert!(!ask_queue.amend(
             4,
             3.03,
-            time::SystemTime::now(),
+            Utc::now().timestamp_nanos()-28800000000000,
             TestOrder {
                 name: "nonexistent"
             },
