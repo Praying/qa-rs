@@ -131,7 +131,7 @@ impl QAMongoClient {
         let v = struct_to_doc(slice.clone());
         coll.update_one(
             doc! {"account_cookie": slice.account_cookie,"trading_day":trading_day},
-            v,
+            doc!{"$set":v},
             UpdateOptions::builder().upsert(Option::from(true)).build(),
         )
         .unwrap();

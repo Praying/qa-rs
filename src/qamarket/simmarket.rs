@@ -30,7 +30,7 @@ pub enum SimMarketAsset {
 // 此处目的主要是实现注册功能, 避免乱七八糟的报单
 fn parse_asset(asset: &str) -> Option<SimMarketAsset> {
     match asset {
-        "YUT" => Some(SimMarketAsset::YUT),
+        "666666" => Some(SimMarketAsset::YUT),
 
         _ => None,
     }
@@ -58,10 +58,10 @@ pub struct QASIMMarket {
 impl QASIMMarket {
     pub fn new() -> Self {
         let mut match_engine = HashMap::new();
-        match_engine.insert("YUT".to_string(), Orderbook::new(SimMarketAsset::YUT));
+        match_engine.insert("666666".to_string(), Orderbook::new(SimMarketAsset::YUT));
 
         let mut matchingE_id = HashMap::new();
-        matchingE_id.insert("YUT".to_string(), HashMap::new());
+        matchingE_id.insert("666666".to_string(), HashMap::new());
         QASIMMarket {
             reg_account: HashMap::new(),
             matchingE_id,

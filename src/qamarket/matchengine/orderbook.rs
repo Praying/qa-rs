@@ -69,6 +69,7 @@ where
     ask_queue: OrderQueue<Order<Asset>>,
     seq: sequence::TradeSequence,
     order_validator: OrderRequestValidator<Asset>,
+    lastprice: f64,
 }
 
 impl<Asset> Orderbook<Asset>
@@ -100,6 +101,7 @@ where
                 MIN_SEQUENCE_ID,
                 MAX_SEQUENCE_ID,
             ),
+            lastprice: 0.0,
         }
     }
 
@@ -192,7 +194,7 @@ where
         let sell = self.ask_queue.peek();
         match (buy, sell) {
             (Some(buy), Some(sell)) => {
-                println!("----- orderbook: {:?} -----\n sell: {:?}  |  {:#?} \n---------------------\nbid: {:?}  |  {:#?} \n", self.order_book_id, sell.price,  sell.volume, buy.price,  buy.volume);
+                println!("----- orderbook: {:?} -----\n sell: {:?}  |  {:#?} \n---------------------\nbid: {:?}  |  {:#?} \n --- lastprice {} ---------\n", self.order_book_id, sell.price,  sell.volume, buy.price,  buy.volume, self.lastprice);
             }
             _ => println!("no buy or sell"),
         }
@@ -444,6 +446,7 @@ where
                 volume,
                 ts: deal_time,
             }));
+            self.lastprice = opposite_order.price;
 
             // modify unmatched part of the opposite limit order
             {
@@ -481,7 +484,7 @@ where
                 volume: opposite_order.volume,
                 ts: deal_time,
             }));
-
+            self.lastprice = opposite_order.price;
             // remove filled limit order from the queue
             {
                 let opposite_queue = match direction {
@@ -514,6 +517,7 @@ where
                 volume,
                 ts: deal_time,
             }));
+            self.lastprice = opposite_order.price;
 
             // remove filled limit order from the queue
             {
