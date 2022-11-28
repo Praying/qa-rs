@@ -46,26 +46,28 @@ fn parse_order_direction(direction: &str) -> Option<OrderDirection> {
 ///
 ///
 pub struct TickSim {
+    pub datetime: i64,
     pub bid1: f64,
     pub ask1: f64,
     pub bid_volume1: f64,
     pub ask_volume1: f64,
     pub last_price: f64,
     pub last_volume: f64,
-    pub datetime: i64,
+    
 }
 impl TickSim {
-    pub fn to_human(&self) -> (f64, f64, f64, f64, f64, f64, String) {
-        println!("bid1:{},ask1:{},bid_volume1:{},ask_volume1:{},last_price:{},last_volume:{},datetime:{}",
-        self.bid1,self.ask1,self.bid_volume1,self.ask_volume1,self.last_price,self.last_volume,parse_datestamp( self.datetime));
+    pub fn to_human(&self) -> (String,f64, f64, f64, f64, f64, f64, ) {
+        // println!("bid1:{},ask1:{},bid_volume1:{},ask_volume1:{},last_price:{},last_volume:{},datetime:{}",
+        // self.bid1,self.ask1,self.bid_volume1,self.ask_volume1,self.last_price,self.last_volume,parse_datestamp( self.datetime));
         (
+            parse_datestamp(self.datetime),
             self.bid1,
             self.ask1,
             self.bid_volume1,
             self.ask_volume1,
             self.last_price,
             self.last_volume,
-            parse_datestamp(self.datetime),
+            
         )
     }
 }
@@ -117,6 +119,15 @@ impl QASIMMarket {
         self.trading_day.clone()
     }
 
+    // pub fn get_l1_orders(&self) -> Vec<orders::OrderRequest> {
+    //     let mut orders = vec![];
+    //     for orderbook in self.OrderBook.values() {
+    //         orders.push(orderbook.get_l1_orders());
+    //     }
+    //     orders
+    // }
+
+    
     pub fn register_account(&mut self, account_name: &str, init_cash: f64) {
         if self.reg_account.contains_key(account_name) {
             println!("{} is already registered", account_name);
@@ -217,13 +228,13 @@ impl QASIMMarket {
             }
         }
     }
-    pub fn get_history_price(&self, code: &str) -> &Vec<TickSim> {
+    pub fn get_l1_tick(&self, code: &str) -> &Vec<TickSim> {
         self.hisprice.get(code).unwrap()
     }
-    pub fn get_history_price_human(
+    pub fn get_l1_tick_human(
         &self,
         code: &str,
-    ) -> Vec<(f64, f64, f64, f64, f64, f64, String)> {
+    ) -> Vec<(String, f64, f64, f64, f64, f64, f64, )> {
         let price = self.hisprice.get(code).unwrap().clone();
         price.iter().map(|x| x.to_human()).collect()
     }
