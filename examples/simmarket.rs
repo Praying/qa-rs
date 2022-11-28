@@ -1,4 +1,4 @@
-use qa_rs::qaconnector::mongo::mongoclient::QAMongoClient;
+//use qa_rs::qaconnector::mongo::mongoclient::QAMongoClient;
 use qa_rs::qamarket::simmarket::QASIMMarket;
 fn main() {
     let mut market = QASIMMarket::new();
@@ -27,10 +27,10 @@ fn main() {
     // println!("{:#?}", market.get_account("sim00001").trades);
     // println!("{:#?}", market.get_account("sim00001").dailyorders);
     // println!("{:#?}", market.get_account("sim00002").dailyorders);
-    let client = QAMongoClient::new("mongodb://192.168.2.115:27017");
-    for slice in market.get_allaccount_qifi() {
-        client.save_his_qifi_slice(slice)
-    }
+    // let client = QAMongoClient::new("mongodb://192.168.2.115:27017");
+    // for slice in market.get_allaccount_qifi() {
+    //     client.save_his_qifi_slice(slice)
+    // }
     println!("hisdata \n {:#?}",market.get_l1_tick_human("666666"));
 
     //println!("{}", parse_datestamp(1669596950000000000));
