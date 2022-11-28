@@ -52,3 +52,42 @@ account.sell_open('IC99', 2.0, '2022-10-25', 3000.0)
 print(account.get_qifi())
 history.append(account.get_qifi())
 ```
+
+
+account 分 3个模式
+
+
+- backtest [fast qifi 几乎忽略订单系统]
+- real  [auto qifi  订单系统默认全部成交]
+- sim [realword qifi  完整订单系统的实现]
+
+this is a example for sim order
+
+sim order
+
+- created:  ALIVE | volume_left!=0
+- canceled:  FINISHED | volume_left>0
+- partical deal:  ALIVE | volume_left>0
+- full deal  FINISHED | volume_left=0
+```
+
+    "16def973-c699-4486-916d-c8a2db64f6e4": Order {
+        seqno: 1,
+        user_id: "x2",
+        order_id: "16def973-c699-4486-916d-c8a2db64f6e4",
+        exchange_id: "",
+        instrument_id: "YUT",
+        direction: "SELL",
+        offset: "OPEN",
+        volume_orign: 4000.0,
+        price_type: "LIMIT",
+        limit_price: 19.0,
+        time_condition: "AND",
+        volume_condition: "GFD",
+        insert_date_time: 1669604369513458500,
+        exchange_order_id: "f2927068-8993-4623-848d-42c7e990299e",
+        status: "ALIVE",
+        volume_left: 3000.0,
+        last_msg: "",
+    },
+```

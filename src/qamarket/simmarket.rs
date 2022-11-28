@@ -1,5 +1,6 @@
 use crate::qaaccount::account::QA_Account;
 use crate::qaaccount::order::QAOrder;
+use crate::qaprotocol::qifi::account::QIFI;
 use crate::qamarket::matchengine::{
     domain::OrderDirection,
     orderbook::{Failed, Orderbook, Success},
@@ -101,6 +102,14 @@ impl QASIMMarket {
             println!("{}={} is registered", account_name, acc.environment);
             self.reg_account.insert(account_name.to_string(), acc);
         }
+    }
+
+    pub fn get_allaccount_qifi(&mut self) -> Vec<QIFI> {
+        let mut qifi = Vec::new();
+        for acc in self.reg_account.values_mut() {
+            qifi.push(acc.get_qifi_slice());
+        }
+        qifi
     }
     pub fn settle(&mut self) {
         //market settle event

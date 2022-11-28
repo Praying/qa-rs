@@ -4,11 +4,12 @@ use std::result;
 
 use crate::qaaccount::account::QA_Account;
 use crate::qaenv::localenv::CONFIG;
+use lazy_static::lazy_static;
 use crate::qaprotocol::qifi::account::QIFI;
 use crate::qaprotocol::qifi::func::{from_serde_value, from_string};
 use chrono::Local;
 use futures::TryStreamExt;
-use lazy_static::lazy_static;
+
 pub use mongodb::{
     bson::{doc, Bson, Document},
     error::Result,
@@ -32,10 +33,10 @@ where
         .unwrap()
         .to_owned()
 }
-lazy_static! {
-    //pub static ref MARKET_MONGO: Client = create_market_mongo_client();
-    pub static ref CLIENT:QAMongoClient = QAMongoClient::new(&CONFIG.account.uri);
-}
+// lazy_static! {
+//     //pub static ref MARKET_MONGO: Client = create_market_mongo_client();
+//     pub static ref CLIENT:QAMongoClient = QAMongoClient::new(&CONFIG.account.uri);
+// }
 #[derive(Debug, Clone)]
 pub struct QAMongoClient {
     pub client: Client,
@@ -135,7 +136,20 @@ impl QAMongoClient {
         )
         .unwrap();
     }
-
+    pub fn save_sim_qifi_slice(&self, slice: QIFI) {
+        let coll = self
+            .client
+            .database(CONFIG.account.db.as_str())
+            .collection::<QIFI>("sim");
+        let trading_day = slice.trading_day.clone();
+        let v = struct_to_doc(slice.clone());
+        coll.update_one(
+            doc! {"account_cookie": slice.account_cookie,"trading_day":trading_day},
+            doc!{"$set":v},
+            UpdateOptions::builder().upsert(Option::from(true)).build(),
+        )
+        .unwrap();
+    }
     pub fn save_accounthis(&self, mut account: QA_Account) {
         let slice: QIFI = account.get_qifi_slice();
 
