@@ -10,6 +10,10 @@ use crate::qaprotocol::qifi::account::QIFI;
 use crate::qautil::parse_datestamp;
 use chrono::Utc;
 use uuid::Uuid;
+use pyo3::exceptions::PyTypeError;
+use pyo3::prelude::*;
+use rayon::prelude::*;
+use serde::{Deserialize, Serialize};
 //use crate::qamarket::order_book::OrderBook;
 
 /// realtime market with lots of account reg
@@ -45,6 +49,7 @@ fn parse_order_direction(direction: &str) -> Option<OrderDirection> {
 }
 ///
 ///
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TickSim {
     pub datetime: i64,
     pub bid1: f64,
@@ -71,6 +76,8 @@ impl TickSim {
         )
     }
 }
+#[pyclass]
+#[allow(unused_must_use)]
 pub struct QASIMMarket {
     pub reg_account: HashMap<String, QA_Account>,
     pub OrderBook: HashMap<String, Orderbook<SimMarketAsset>>,
@@ -99,7 +106,7 @@ impl QASIMMarket {
             OrderBook: match_engine,
             time: String::new(),
             trading_day: String::new(),
-            portfolio_name: "qasim_markte".to_string(),
+            portfolio_name: "qasim_market".to_string(),
             lastpricepanel: HashMap::new(),
             hisprice,
         }
@@ -367,5 +374,58 @@ impl QASIMMarket {
         for (orderid, single_order_book) in self.OrderBook.iter_mut() {
             single_order_book.plot_orderbook();
         }
+    }
+}
+
+
+#[pymethods]
+impl QASIMMarket {
+    #[new]
+    fn new_from_py() -> Self {
+        Self::new()
+    }
+
+    #[pyo3(name = "init_market")]
+    pub fn init_market(&mut self, account_list: HashMap<String, f64>) {
+        for acc in account_list.keys() {
+            self.register_account(acc, account_list[acc])
+        }
+    }
+    #[pyo3(name = "sync_time")]
+    pub fn py_sync_time(&mut self) {
+        self.sync_time()
+    }
+
+    #[pyo3(name = "insert_order")]
+    pub fn py_insert_order(&mut self, account_cookie:&str, code:&str, price:f64, amount:f64, direction:&str, offset:&str) {
+        self.insert_order(account_cookie, code, price, amount, direction, offset);
+    }
+    #[pyo3(name = "matchs")]
+    pub fn py_matchs(&mut self, account_cookie:&str, code:&str, price:f64, amount:f64, direction:&str, offset:&str) {
+        self.matchs()
+    }
+
+    #[pyo3(name = "get_l1tick")]
+    pub fn py_l1tick(&mut self, ) -> String {
+        serde_json::to_string(&self.hisprice).unwrap()
+    }
+
+    #[pyo3(name = "get_lastprice")]
+    pub fn py_get_lastprice(&mut self, ) -> String {
+        serde_json::to_string(&self.lastpricepanel).unwrap()
+    }
+
+    #[pyo3(name = "get_all_account")]
+    pub fn py_get_all_account(&mut self, ) -> PyResult<String> {
+        self.pub_marketdata_to_allaccount();
+        let qifislice: HashMap<String, QIFI> = self
+        .reg_account
+        .par_iter_mut()
+        .map(|(accname, acc)| (accname.clone(), acc.get_qifi_slice()))
+        .collect::<HashMap<String, QIFI>>();
+        // let portqifi =
+        //     QA_Portfolio::new(self.portfolio_name.clone(), qifislice).get_portfolio_qifi();
+        let v = serde_json::to_string(&qifislice).unwrap();
+        Ok(v)
     }
 }

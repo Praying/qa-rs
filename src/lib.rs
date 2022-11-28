@@ -13,6 +13,7 @@ use pyo3::prelude::*;
 use qaaccount::account::QA_Account;
 use qaengine::{backtest::QABacktest, strategy::StrategyWrapper};
 use qamarket::marketsys::QAMarket;
+use qamarket::simmarket::QASIMMarket;
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
 //======================================================================================================
@@ -22,6 +23,7 @@ fn qars_core(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<QA_Account>()?;
     m.add_class::<QABacktest>()?;
     m.add_class::<QAMarket>()?;
+    m.add_class::<QASIMMarket>()?;
     m.add_class::<StrategyWrapper>()?;
     Ok(())
 }
