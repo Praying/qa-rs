@@ -369,7 +369,7 @@ impl QASIMMarket {
         });
     }
 
-    pub fn matchs(&mut self) {
+    pub fn plot_askbid(&mut self) {
         // trade event
         for (orderid, single_order_book) in self.OrderBook.iter_mut() {
             single_order_book.plot_orderbook();
@@ -400,9 +400,9 @@ impl QASIMMarket {
     pub fn py_insert_order(&mut self, account_cookie:&str, code:&str, price:f64, amount:f64, direction:&str, offset:&str) {
         self.insert_order(account_cookie, code, price, amount, direction, offset);
     }
-    #[pyo3(name = "matchs")]
-    pub fn py_matchs(&mut self, account_cookie:&str, code:&str, price:f64, amount:f64, direction:&str, offset:&str) {
-        self.matchs()
+    #[pyo3(name = "plot_askbid")]
+    pub fn py_plot_askbid(&mut self) {
+        self.plot_askbid()
     }
 
     #[pyo3(name = "get_l1tick")]
