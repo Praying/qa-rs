@@ -125,7 +125,7 @@ where
                 proc_result.push(Ok(Success::Accepted {
                     id: order_id,
                     order_type: OrderType::Market,
-                    ts: Utc::now().timestamp_nanos()-28800000000000,
+                    ts: Utc::now().timestamp_nanos(),
                 }));
 
                 self.process_market_order(
@@ -148,7 +148,7 @@ where
                 proc_result.push(Ok(Success::Accepted {
                     id: order_id,
                     order_type: OrderType::Limit,
-                    ts: Utc::now().timestamp_nanos()-28800000000000,
+                    ts: Utc::now().timestamp_nanos(),
                 }));
 
                 self.process_limit_order(
@@ -348,7 +348,7 @@ where
                 id: order_id,
                 price,
                 volume,
-                ts: Utc::now().timestamp_nanos()-28800000000000,
+                ts: Utc::now().timestamp_nanos(),
             }));
         } else {
             results.push(Err(Failed::OrderNotFound(order_id)));
@@ -369,7 +369,7 @@ where
         if order_queue.cancel(order_id) {
             results.push(Ok(Success::Cancelled {
                 id: order_id,
-                ts: Utc::now().timestamp_nanos()-28800000000000,
+                ts: Utc::now().timestamp_nanos(),
             }));
         } else {
             results.push(Err(Failed::OrderNotFound(order_id)));
@@ -419,7 +419,7 @@ where
         volume: f64,
     ) -> bool {
         // real processing time
-        let deal_time = Utc::now().timestamp_nanos()-28800000000000;
+        let deal_time = Utc::now().timestamp_nanos();
 
         // match immediately
         if volume < opposite_order.volume {

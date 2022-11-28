@@ -217,13 +217,13 @@ mod test {
         assert!(bid_queue.insert(
             1,
             1.01,
-            Utc::now().timestamp_nanos()-28800000000000,
+            Utc::now().timestamp_nanos(),
             TestOrder { name: "low bid" },
         ));
         assert!(bid_queue.insert(
             2,
             1.02,
-            Utc::now().timestamp_nanos()-28800000000000,
+            Utc::now().timestamp_nanos(),
             TestOrder {
                 name: "high bid first"
             },
@@ -232,7 +232,7 @@ mod test {
         assert!(bid_queue.insert(
             3,
             1.02,
-            Utc::now().timestamp_nanos()-28800000000000,
+            Utc::now().timestamp_nanos(),
             TestOrder {
                 name: "high bid second"
             },
@@ -247,7 +247,7 @@ mod test {
         assert!(ask_queue.insert(
             1,
             1.01,
-            Utc::now().timestamp_nanos()-28800000000000,
+            Utc::now().timestamp_nanos(),
             TestOrder {
                 name: "low ask first"
             },
@@ -255,13 +255,13 @@ mod test {
         assert!(ask_queue.insert(
             2,
             1.02,
-            Utc::now().timestamp_nanos()-28800000000000,
+            Utc::now().timestamp_nanos(),
             TestOrder { name: "high ask" },
         ));
         assert!(ask_queue.insert(
             3,
             1.01,
-            Utc::now().timestamp_nanos()-28800000000000,
+            Utc::now().timestamp_nanos(),
             TestOrder {
                 name: "low ask second"
             },
@@ -280,7 +280,7 @@ mod test {
         assert!(bid_queue.insert(
             1,
             1.01,
-            Utc::now().timestamp_nanos()-28800000000000,
+            Utc::now().timestamp_nanos(),
             TestOrder { name: "first bid" },
         ));
 
@@ -288,7 +288,7 @@ mod test {
         assert!(!bid_queue.insert(
             1,
             1.02,
-            Utc::now().timestamp_nanos()-28800000000000,
+            Utc::now().timestamp_nanos(),
             TestOrder {
                 name: "another first bid"
             },
@@ -337,20 +337,20 @@ mod test {
         assert!(ask_queue.amend(
             2,
             0.99,
-            Utc::now().timestamp_nanos()-28800000000000,
+            Utc::now().timestamp_nanos(),
             TestOrder { name: "new first" },
         ));
         assert!(ask_queue.amend(
             1,
             1.01,
-            Utc::now().timestamp_nanos()-28800000000000,
+            Utc::now().timestamp_nanos(),
             TestOrder { name: "new last" },
         ));
         // non-exist order
         assert!(!ask_queue.amend(
             4,
             3.03,
-            Utc::now().timestamp_nanos()-28800000000000,
+            Utc::now().timestamp_nanos(),
             TestOrder {
                 name: "nonexistent"
             },

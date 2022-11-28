@@ -131,22 +131,29 @@ impl QASIMMarket {
 
                 match result {
                     Ok(order) => {
+
+                        // 下单成功 - > account 允许下单
                         let single_order_book = self.OrderBook.get_mut(code).unwrap();
 
                         let orderx = orders::new_limit_order_request(
                             code_asset, 
                             parse_order_direction(&order.direction).unwrap(),
-                            order.price, order.volume,  Utc::now().timestamp_nanos()-28800000000000);
+                            order.price, order.volume,  Utc::now().timestamp_nanos());
                         let result = single_order_book.process_order(orderx);
+                        
                         result.iter().for_each(|res| {
                             match res {
                                 Ok(event) =>{
                                     match event{
                                         Success::Accepted { id, order_type, ts } => {
                                             println!("Accepted order {} of type {:?} at {:?}", id, order_type, ts);
+                                            
                                         }
                                         Success::Filled { order_id, order_type, ts, price, volume, direction } => {
                                             println!("Matched order {} of type {:?} at {:?} for {} units at {}", order_id, order_type, ts, volume, price);
+                                            // 成交事件
+                                            // 成交需要通知 双方账户
+                                            //let order = self.orders.get_mut(order_id).unwrap();
                                         }
                                         Success::Cancelled { id, ts } => {
                                             println!("Cancelled order {} of at {:?}", id,  ts);
@@ -175,7 +182,7 @@ impl QASIMMarket {
                         // });
                         
                         
-                        self.orders.insert(market_order_id, order);
+                        
                     }
                     Err(e) => {}
                 }
