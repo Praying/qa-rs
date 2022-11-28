@@ -34,7 +34,7 @@ pub enum SimMarketAsset {
 // 此处目的主要是实现注册功能, 避免乱七八糟的报单
 fn parse_asset(asset: &str) -> Option<SimMarketAsset> {
     match asset {
-        "666666" => Some(SimMarketAsset::YUT),
+        "IX2301" => Some(SimMarketAsset::YUT),
 
         _ => None,
     }
@@ -88,18 +88,29 @@ pub struct QASIMMarket {
     pub trading_day: String,
     pub lastpricepanel: HashMap<String, f64>,
     pub hisprice: HashMap<String, Vec<TickSim>>,
+    pub lasttick: HashMap<String, TickSim>,
 }
 
 impl QASIMMarket {
     pub fn new() -> Self {
         let mut match_engine = HashMap::new();
-        match_engine.insert("666666".to_string(), Orderbook::new(SimMarketAsset::YUT));
+        match_engine.insert("IX2301".to_string(), Orderbook::new(SimMarketAsset::YUT));
 
         let mut matchingE_id = HashMap::new();
-        matchingE_id.insert("666666".to_string(), HashMap::new());
+        matchingE_id.insert("IX2301".to_string(), HashMap::new());
 
         let mut hisprice = HashMap::new();
-        hisprice.insert("666666".to_string(), vec![]);
+        hisprice.insert("IX2301".to_string(), vec![]);
+        let mut lasttick = HashMap::new();
+        lasttick.insert("IX2301".to_string(), TickSim {
+            datetime: 0,
+            bid1: 0.0,
+            ask1: 0.0,
+            bid_volume1: 0.0,
+            ask_volume1: 0.0,
+            last_price: 0.0,
+            last_volume: 0.0,
+        });
         QASIMMarket {
             reg_account: HashMap::new(),
             matchingE_id,
@@ -109,6 +120,7 @@ impl QASIMMarket {
             portfolio_name: "qasim_market".to_string(),
             lastpricepanel: HashMap::new(),
             hisprice,
+            lasttick
         }
     }
 
@@ -298,7 +310,16 @@ impl QASIMMarket {
                                     last_price: lp,
                                     last_volume: volume.clone(),
                                     datetime: ts.clone(),
-                                })
+                                });
+                            self.lasttick.insert(order.instrument_id.clone(),TickSim {
+                                    bid1: bp,
+                                    ask1: ap,
+                                    bid_volume1: bv,
+                                    ask_volume1: av,
+                                    last_price: lp,
+                                    last_volume: volume.clone(),
+                                    datetime: ts.clone(),
+                                });
                             // 成交事件
                             // 成交需要通知 双方账户
                             //let order = self.orders.get_mut(order_id).unwrap();
@@ -347,7 +368,16 @@ impl QASIMMarket {
                                     last_price: lp,
                                     last_volume: volume.clone(),
                                     datetime: ts.clone(),
-                                })
+                                });
+                            self.lasttick.insert(order.instrument_id.clone(),TickSim {
+                                bid1: bp,
+                                ask1: ap,
+                                bid_volume1: bv,
+                                ask_volume1: av,
+                                last_price: lp,
+                                last_volume: volume.clone(),
+                                datetime: ts.clone(),
+                            });
                         }
                         Success::Amended {
                             id,
@@ -414,7 +444,10 @@ impl QASIMMarket {
     pub fn py_get_lastprice(&mut self, ) -> String {
         serde_json::to_string(&self.lastpricepanel).unwrap()
     }
-
+    #[pyo3(name = "get_lasttick")]
+    pub fn py_get_lasttick(&mut self, ) -> String {
+        serde_json::to_string(&self.lasttick).unwrap()
+    }
     #[pyo3(name = "get_all_account")]
     pub fn py_get_all_account(&mut self, ) -> PyResult<String> {
         self.pub_marketdata_to_allaccount();
