@@ -4,11 +4,11 @@ use std::result;
 
 use crate::qaaccount::account::QA_Account;
 use crate::qaenv::localenv::CONFIG;
-use lazy_static::lazy_static;
 use crate::qaprotocol::qifi::account::QIFI;
 use crate::qaprotocol::qifi::func::{from_serde_value, from_string};
 use chrono::Local;
 use futures::TryStreamExt;
+use lazy_static::lazy_static;
 
 pub use mongodb::{
     bson::{doc, Bson, Document},
@@ -131,7 +131,7 @@ impl QAMongoClient {
         let v = struct_to_doc(slice.clone());
         coll.update_one(
             doc! {"account_cookie": slice.account_cookie,"trading_day":trading_day},
-            doc!{"$set":v},
+            doc! {"$set":v},
             UpdateOptions::builder().upsert(Option::from(true)).build(),
         )
         .unwrap();
@@ -145,7 +145,7 @@ impl QAMongoClient {
         let v = struct_to_doc(slice.clone());
         coll.update_one(
             doc! {"account_cookie": slice.account_cookie,"trading_day":trading_day},
-            doc!{"$set":v},
+            doc! {"$set":v},
             UpdateOptions::builder().upsert(Option::from(true)).build(),
         )
         .unwrap();

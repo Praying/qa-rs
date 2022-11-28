@@ -1059,6 +1059,10 @@ impl QA_Account {
         _realorder_id: String,
         towards: i32,
     ) {
+        println!(
+            "{}receive deal sim {} {} {} {} {} ",
+            self.account_cookie, code, amount, price, datetime, order_id
+        );
         self.event_id += 1;
         self.time = datetime.clone();
         if self.frozen.contains_key(&order_id) {

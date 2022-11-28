@@ -1,12 +1,12 @@
 use crate::qaaccount::account::QA_Account;
 use crate::qaaccount::order::QAOrder;
-use crate::qaprotocol::qifi::account::QIFI;
 use crate::qamarket::matchengine::{
     domain::OrderDirection,
     orderbook::{Failed, Orderbook, Success},
     orders,
     orders::OrderRequest,
 };
+use crate::qaprotocol::qifi::account::QIFI;
 use crate::qautil::parse_datestamp;
 use chrono::Utc;
 use uuid::Uuid;
@@ -52,7 +52,7 @@ pub struct QASIMMarket {
     time: String,
     portfolio_name: String,
     pub trading_day: String,
-    pub marketpanel: HashMap<String, f64>,
+    pub lastpricepanel: HashMap<String, f64>,
 }
 
 impl QASIMMarket {
@@ -69,7 +69,7 @@ impl QASIMMarket {
             time: String::new(),
             trading_day: String::new(),
             portfolio_name: "qasim_markte".to_string(),
-            marketpanel: HashMap::new(),
+            lastpricepanel: HashMap::new(),
         }
     }
 
@@ -105,18 +105,28 @@ impl QASIMMarket {
     }
 
     pub fn get_allaccount_qifi(&mut self) -> Vec<QIFI> {
+        self.pub_marketdata_to_allaccount();
         let mut qifi = Vec::new();
         for acc in self.reg_account.values_mut() {
             qifi.push(acc.get_qifi_slice());
         }
         qifi
     }
+
+    pub fn pub_marketdata_to_allaccount(&mut self) {
+        self.sync_time();
+        for acc in self.reg_account.values_mut() {
+            for (code, lastprice) in self.lastpricepanel.iter() {
+                acc.on_price_change(code.to_string(), lastprice.clone(), self.time.clone());
+            }
+        }
+    }
     pub fn settle(&mut self) {
         //market settle event
         let datetime = self.time.clone();
         for acc in self.reg_account.values_mut() {
             for code in acc.get_code_subscribed() {
-                let price = self.marketpanel.get(&code).unwrap();
+                let price = self.lastpricepanel.get(&code).unwrap();
                 acc.on_price_change(code, price.clone(), datetime.clone());
             }
             acc.settle();
@@ -215,7 +225,8 @@ impl QASIMMarket {
                                 order.order_id.clone(),
                                 order.towards.clone(),
                             );
-
+                            self.lastpricepanel
+                                .insert(order.instrument_id.clone(), price.clone());
                             // 成交事件
                             // 成交需要通知 双方账户
                             //let order = self.orders.get_mut(order_id).unwrap();
@@ -246,10 +257,12 @@ impl QASIMMarket {
                                 price.clone(),
                                 parse_datestamp(ts.clone()),
                                 order.order_id.clone(),
-                                order.order_id.clone(),
+                                uuid::Uuid::new_v4().to_string(),
                                 order.order_id.clone(),
                                 order.towards.clone(),
                             );
+                            self.lastpricepanel
+                                .insert(order.instrument_id.clone(), price.clone());
                         }
                         Success::Amended {
                             id,
