@@ -1,10 +1,10 @@
-use std::fmt::Debug;
-use chrono::Utc;
 use super::domain::{Order, OrderDirection, OrderType};
 use super::order_queues::OrderQueue;
 use super::orders::OrderRequest;
 use super::sequence;
 use super::validation::OrderRequestValidator;
+use chrono::Utc;
+use std::fmt::Debug;
 
 const MIN_SEQUENCE_ID: u64 = 1;
 const MAX_SEQUENCE_ID: u64 = 1000;

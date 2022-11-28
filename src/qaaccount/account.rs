@@ -892,7 +892,6 @@ impl QA_Account {
                         order_id.clone(),
                         order_id.clone(),
                         towards,
-                        self.event_id.clone(),
                     )
                     // self.events.insert(self.datetime.clone(), "order insert".to_string());
                 }
@@ -913,10 +912,10 @@ impl QA_Account {
                             limit_price: price,
                             time_condition: "AND".to_string(),
                             volume_condition: "GFD".to_string(),
-                            insert_date_time:Utc::now().timestamp_nanos(),
+                            insert_date_time: Utc::now().timestamp_nanos(),
                             exchange_order_id: Uuid::new_v4().to_string(),
-                            status: "FINISHED".to_string(),
-                            volume_left: 0.0,
+                            status: "ALIVE".to_string(),
+                            volume_left: amount,
                             last_msg: "".to_string(),
                         },
                     );
@@ -992,8 +991,8 @@ impl QA_Account {
         trade_id: String,
         _realorder_id: String,
         towards: i32,
-        event_id: i32,
     ) {
+        self.event_id += 1;
         self.time = datetime.clone();
         if self.frozen.contains_key(&order_id) {
             let frozen = self.frozen.get_mut(&order_id).unwrap();
@@ -1033,7 +1032,7 @@ impl QA_Account {
             .timestamp_nanos()
             - 28800000000000;
         let trade = Trade {
-            seqno: event_id,
+            seqno: self.event_id.clone(),
             user_id: self.account_cookie.clone(),
             price,
             order_id,
@@ -1049,7 +1048,75 @@ impl QA_Account {
         };
         self.dailytrades.insert(trade_id, trade.clone());
     }
+    pub fn receive_deal_sim(
+        &mut self,
+        code: String,
+        amount: f64,
+        price: f64,
+        datetime: String,
+        order_id: String,
+        trade_id: String,
+        _realorder_id: String,
+        towards: i32,
+    ) {
+        self.event_id += 1;
+        self.time = datetime.clone();
+        if self.frozen.contains_key(&order_id) {
+            let frozen = self.frozen.get_mut(&order_id).unwrap();
+            self.money += frozen.money;
+            self.frozen.remove(&order_id);
+        } else {
+            if towards == -1 | 1 | 2 | -2 {
+                error!("NOT IN DAY ORDER {}", order_id)
+            }
+        }
+        let qapos = self.get_position(code.as_ref()).unwrap();
 
+        let commission = qapos
+            .clone()
+            .preset
+            .calc_commission(price.clone(), amount.clone());
+        let tax = qapos
+            .clone()
+            .preset
+            .calc_tax(price.clone(), amount.clone(), towards.clone());
+        qapos.on_price_change(price.clone(), datetime.clone());
+        let (margin, close_profit) = qapos.update_pos(price, amount, towards);
+        let (direction, offset) = self.get_direction_or_offset(towards);
+        // add calc tax/coeff
+        //        qapos.preset.commission_coeff_pervol
+
+        self.money -= margin - close_profit + commission + tax;
+        self.accounts.close_profit += close_profit;
+        self.cash.push(self.money);
+        self.accounts.commission += commission + tax;
+
+        // println!("{:?} {:?} {:?} {:?}", datetime,code,direction,offset);
+
+        let td = Utc
+            .datetime_from_str(datetime.as_ref(), "%Y-%m-%d %H:%M:%S")
+            .unwrap()
+            .timestamp_nanos()
+            - 28800000000000;
+        let trade = Trade {
+            seqno: self.event_id.clone(),
+            user_id: self.account_cookie.clone(),
+            price,
+            order_id: order_id.clone(),
+            trade_id: trade_id.clone(),
+            exchange_id: "".to_string(),
+            commission: commission + tax,
+            direction,
+            offset,
+            instrument_id: code,
+            exchange_trade_id: "".to_string(),
+            volume: amount,
+            trade_date_time: td,
+        };
+        let order = self.dailyorders.get_mut(&order_id).unwrap();
+        order.trade(amount);
+        self.dailytrades.insert(trade_id, trade.clone());
+    }
     fn receive_deal(
         &mut self,
         code: String,

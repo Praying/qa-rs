@@ -63,6 +63,25 @@ pub struct Order {
     pub last_msg: String,
 }
 
+impl Order {
+    pub fn trade(&mut self, amount: f64) {
+        self.volume_left -= amount;
+        if self.volume_left == 0.0 {
+            self.status = "FINISHED".to_string();
+        }
+    }
+
+    pub fn cancel(&mut self) {
+        self.status = "FINISHED".to_string();
+    }
+
+    pub fn is_finished(&mut self) -> bool {
+        self.status == "FINISHED".to_string()
+    }
+    pub fn is_alive(&mut self) -> bool {
+        self.status == "ALIVE".to_string()
+    }
+}
 #[allow(dead_code)]
 #[derive(Serialize, Clone, Deserialize, Debug, Default)]
 pub struct Position {

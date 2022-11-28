@@ -1,7 +1,7 @@
+use super::domain::OrderDirection;
+use chrono::Utc;
 use std::cmp::Ordering;
 use std::collections::{BinaryHeap, HashMap};
-use chrono::Utc;
-use super::domain::OrderDirection;
 
 #[derive(Clone)]
 struct OrderIndex {

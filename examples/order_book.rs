@@ -1,5 +1,5 @@
-use qa_rs::qamarket::matchengine::{domain::OrderDirection, orderbook::Orderbook, orders};
 use chrono::Utc;
+use qa_rs::qamarket::matchengine::{domain::OrderDirection, orderbook::Orderbook, orders};
 
 #[derive(PartialEq, Eq, Debug, Copy, Clone)]
 pub enum BrokerAsset {
@@ -34,7 +34,13 @@ fn main() {
             1.0,
             Utc::now().timestamp_nanos(),
         ),
-        orders::amend_order_request(1, OrderDirection::BUY, 0.99, 4.0, Utc::now().timestamp_nanos()),
+        orders::amend_order_request(
+            1,
+            OrderDirection::BUY,
+            0.99,
+            4.0,
+            Utc::now().timestamp_nanos(),
+        ),
         orders::new_limit_order_request(
             order_book_id,
             OrderDirection::BUY,
