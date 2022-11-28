@@ -44,6 +44,31 @@ fn parse_order_direction(direction: &str) -> Option<OrderDirection> {
     }
 }
 ///
+///
+pub struct TickSim {
+    pub bid1: f64,
+    pub ask1: f64,
+    pub bid_volume1: f64,
+    pub ask_volume1: f64,
+    pub last_price: f64,
+    pub last_volume: f64,
+    pub datetime: i64,
+}
+impl TickSim {
+    pub fn to_human(&self) -> (f64, f64, f64, f64, f64, f64, String) {
+        println!("bid1:{},ask1:{},bid_volume1:{},ask_volume1:{},last_price:{},last_volume:{},datetime:{}",
+        self.bid1,self.ask1,self.bid_volume1,self.ask_volume1,self.last_price,self.last_volume,parse_datestamp( self.datetime));
+        (
+            self.bid1,
+            self.ask1,
+            self.bid_volume1,
+            self.ask_volume1,
+            self.last_price,
+            self.last_volume,
+            parse_datestamp(self.datetime),
+        )
+    }
+}
 pub struct QASIMMarket {
     pub reg_account: HashMap<String, QA_Account>,
     pub OrderBook: HashMap<String, Orderbook<SimMarketAsset>>,
@@ -53,6 +78,7 @@ pub struct QASIMMarket {
     portfolio_name: String,
     pub trading_day: String,
     pub lastpricepanel: HashMap<String, f64>,
+    pub hisprice: HashMap<String, Vec<TickSim>>,
 }
 
 impl QASIMMarket {
@@ -62,6 +88,9 @@ impl QASIMMarket {
 
         let mut matchingE_id = HashMap::new();
         matchingE_id.insert("666666".to_string(), HashMap::new());
+
+        let mut hisprice = HashMap::new();
+        hisprice.insert("666666".to_string(), vec![]);
         QASIMMarket {
             reg_account: HashMap::new(),
             matchingE_id,
@@ -70,6 +99,7 @@ impl QASIMMarket {
             trading_day: String::new(),
             portfolio_name: "qasim_markte".to_string(),
             lastpricepanel: HashMap::new(),
+            hisprice,
         }
     }
 
@@ -187,15 +217,26 @@ impl QASIMMarket {
             }
         }
     }
-
+    pub fn get_history_price(&self, code: &str) -> &Vec<TickSim> {
+        self.hisprice.get(code).unwrap()
+    }
+    pub fn get_history_price_human(
+        &self,
+        code: &str,
+    ) -> Vec<(f64, f64, f64, f64, f64, f64, String)> {
+        let price = self.hisprice.get(code).unwrap().clone();
+        price.iter().map(|x| x.to_human()).collect()
+    }
     pub fn on_insert_order_book(&mut self, order: QAOrder, result: Vec<Result<Success, Failed>>) {
+        let mut orderbook = self.OrderBook.get_mut(&order.instrument_id).unwrap();
+        let matchE = self.matchingE_id.get_mut(&order.instrument_id).unwrap();
         result.iter().for_each(|res| {
             match res {
                 Ok(event) => {
                     match event {
                         Success::Accepted { id, order_type, ts } => {
                             println!("Accepted order {} of type {:?} at {:?}", id, order_type, ts);
-                            let matchE = self.matchingE_id.get_mut(&order.instrument_id).unwrap();
+
                             matchE.insert(id.clone(), order.clone());
                         }
                         Success::Filled {
@@ -210,7 +251,7 @@ impl QASIMMarket {
                                 "Matched order {} of type {:?} at {:?} for {} units at {}",
                                 order_id, order_type, ts, volume, price
                             );
-                            let matchE = self.matchingE_id.get_mut(&order.instrument_id).unwrap();
+                            //let matchE = self.matchingE_id.get_mut(&order.instrument_id).unwrap();
                             let order = matchE.get_mut(order_id).unwrap();
                             println!("matched order {:?}", order);
 
@@ -227,6 +268,19 @@ impl QASIMMarket {
                             );
                             self.lastpricepanel
                                 .insert(order.instrument_id.clone(), price.clone());
+                            let (bp, bv, ap, av, lp) = orderbook.get_l1_tick();
+                            self.hisprice
+                                .get_mut(order.instrument_id.as_str())
+                                .unwrap()
+                                .push(TickSim {
+                                    bid1: bp,
+                                    ask1: ap,
+                                    bid_volume1: bv,
+                                    ask_volume1: av,
+                                    last_price: lp,
+                                    last_volume: volume.clone(),
+                                    datetime: ts.clone(),
+                                })
                             // 成交事件
                             // 成交需要通知 双方账户
                             //let order = self.orders.get_mut(order_id).unwrap();
@@ -246,7 +300,7 @@ impl QASIMMarket {
                                 "Partially filled order {} of type {:?} at {:?} for {} units at {}",
                                 order_id, order_type, ts, volume, price
                             );
-                            let matchE = self.matchingE_id.get_mut(&order.instrument_id).unwrap();
+                            //let matchE = self.matchingE_id.get_mut(&order.instrument_id).unwrap();
                             let order = matchE.get_mut(order_id).unwrap();
                             println!("matched order {:?}", order);
 
@@ -263,6 +317,19 @@ impl QASIMMarket {
                             );
                             self.lastpricepanel
                                 .insert(order.instrument_id.clone(), price.clone());
+                            let (bp, bv, ap, av, lp) = orderbook.get_l1_tick();
+                            self.hisprice
+                                .get_mut(order.instrument_id.as_str())
+                                .unwrap()
+                                .push(TickSim {
+                                    bid1: bp,
+                                    ask1: ap,
+                                    bid_volume1: bv,
+                                    ask_volume1: av,
+                                    last_price: lp,
+                                    last_volume: volume.clone(),
+                                    datetime: ts.clone(),
+                                })
                         }
                         Success::Amended {
                             id,
@@ -287,18 +354,6 @@ impl QASIMMarket {
     pub fn matchs(&mut self) {
         // trade event
         for (orderid, single_order_book) in self.OrderBook.iter_mut() {
-            //let single_order_book = self.OrderBook.get_mut(&order.order_book_id.to_string()).unwrap();
-            // let single_order_book = self.OrderBook.get_mut(&order.instrument_id).unwrap();
-
-            // let orderx = orders::new_limit_order_request(
-            //     parse_asset(&order.instrument_id).unwrap(),
-            //     parse_order_direction(&order.direction).unwrap(),
-            //     order.price, order.volume, SystemTime::now());
-            // let result = single_order_book.process_order(orderx);
-            // print!("match result {:#?} ", result);
-            // result.iter().map(|x| {
-            //     println!("order match {:?}", x);
-            // });
             single_order_book.plot_orderbook();
         }
     }

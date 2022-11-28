@@ -199,6 +199,21 @@ where
             _ => println!("no buy or sell"),
         }
     }
+
+    pub fn get_l1_tick(&mut self) -> (f64, f64, f64, f64, f64) {
+        let buy = self.bid_queue.peek();
+        let sell = self.ask_queue.peek();
+        match (buy, sell) {
+            (Some(buy), Some(sell)) => (
+                buy.price,
+                buy.volume,
+                sell.price,
+                sell.volume,
+                self.lastprice,
+            ),
+            _ => (0.0, 0.0, 0.0, 0.0, 0.0),
+        }
+    }
     /* Processing logic */
 
     fn process_market_order(

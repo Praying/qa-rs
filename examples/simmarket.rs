@@ -18,7 +18,7 @@ fn main() {
     market.insert_order("sim00001", "666666", 22.0, 1000.0, "SELL", "OPEN");
     market.matchs();
     println!("new orders from sim00002 ");
-    market.insert_order("sim00002", "666666", 19.0, 4000.0, "SELL", "OPEN");
+    market.insert_order("sim00002", "666666", 19.0, 2000.0, "SELL", "OPEN");
     market.matchs();
     market.insert_order("sim00002", "666666", 19.0, 4000.0, "SELL", "OPEN");
     market.matchs();
@@ -31,6 +31,7 @@ fn main() {
     for slice in market.get_allaccount_qifi() {
         client.save_his_qifi_slice(slice)
     }
+    market.get_history_price_human("666666");
 
     //println!("{}", parse_datestamp(1669596950000000000));
 }
