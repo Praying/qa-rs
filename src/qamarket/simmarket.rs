@@ -29,13 +29,16 @@ use hashbrown::HashMap;
 ///
 #[derive(PartialEq, Eq, Debug, Copy, Clone)]
 pub enum SimMarketAsset {
-    YUT,
+    IX,
+    IY,
+    IZ,
 }
 // 此处目的主要是实现注册功能, 避免乱七八糟的报单
 fn parse_asset(asset: &str) -> Option<SimMarketAsset> {
     match asset {
-        "IX2301" => Some(SimMarketAsset::YUT),
-
+        "IX2301" => Some(SimMarketAsset::IX),
+        "IY2301" => Some(SimMarketAsset::IY),
+        "IZ2301" => Some(SimMarketAsset::IZ),
         _ => None,
     }
 }
@@ -94,23 +97,31 @@ pub struct QASIMMarket {
 impl QASIMMarket {
     pub fn new() -> Self {
         let mut match_engine = HashMap::new();
-        match_engine.insert("IX2301".to_string(), Orderbook::new(SimMarketAsset::YUT));
+        
 
         let mut matchingE_id = HashMap::new();
-        matchingE_id.insert("IX2301".to_string(), HashMap::new());
+        
 
         let mut hisprice = HashMap::new();
-        hisprice.insert("IX2301".to_string(), vec![]);
+        
         let mut lasttick = HashMap::new();
-        lasttick.insert("IX2301".to_string(), TickSim {
-            datetime: 0,
-            bid1: 0.0,
-            ask1: 0.0,
-            bid_volume1: 0.0,
-            ask_volume1: 0.0,
-            last_price: 0.0,
-            last_volume: 0.0,
-        });
+        for i in ["IX2301", "IY2301", "IZ2301"].iter() {
+            lasttick.insert(i.to_string(), TickSim {
+                datetime: 0,
+                bid1: 0.0,
+                ask1: 0.0,
+                bid_volume1: 0.0,
+                ask_volume1: 0.0,
+                last_price: 0.0,
+                last_volume: 0.0,
+            });
+            
+            hisprice.insert(i.to_string(), vec![]);
+            matchingE_id.insert(i.to_string(), HashMap::new());
+        }
+        match_engine.insert("IX2301".to_string(), Orderbook::new(SimMarketAsset::IX));
+        match_engine.insert("IZ2301".to_string(), Orderbook::new(SimMarketAsset::IZ));
+        match_engine.insert("IY2301".to_string(), Orderbook::new(SimMarketAsset::IY));
         QASIMMarket {
             reg_account: HashMap::new(),
             matchingE_id,
@@ -299,18 +310,18 @@ impl QASIMMarket {
                             self.lastpricepanel
                                 .insert(order.instrument_id.clone(), price.clone());
                             let (bp, bv, ap, av, lp) = orderbook.get_l1_tick();
-                            self.hisprice
-                                .get_mut(order.instrument_id.as_str())
-                                .unwrap()
-                                .push(TickSim {
-                                    bid1: bp,
-                                    ask1: ap,
-                                    bid_volume1: bv,
-                                    ask_volume1: av,
-                                    last_price: lp,
-                                    last_volume: volume.clone(),
-                                    datetime: ts.clone(),
-                                });
+                            // self.hisprice
+                            //     .get_mut(order.instrument_id.as_str())
+                            //     .unwrap()
+                            //     .push(TickSim {
+                            //         bid1: bp,
+                            //         ask1: ap,
+                            //         bid_volume1: bv,
+                            //         ask_volume1: av,
+                            //         last_price: lp,
+                            //         last_volume: volume.clone(),
+                            //         datetime: ts.clone(),
+                            //     });
                             self.lasttick.insert(order.instrument_id.clone(),TickSim {
                                     bid1: bp,
                                     ask1: ap,
@@ -357,18 +368,18 @@ impl QASIMMarket {
                             self.lastpricepanel
                                 .insert(order.instrument_id.clone(), price.clone());
                             let (bp, bv, ap, av, lp) = orderbook.get_l1_tick();
-                            self.hisprice
-                                .get_mut(order.instrument_id.as_str())
-                                .unwrap()
-                                .push(TickSim {
-                                    bid1: bp,
-                                    ask1: ap,
-                                    bid_volume1: bv,
-                                    ask_volume1: av,
-                                    last_price: lp,
-                                    last_volume: volume.clone(),
-                                    datetime: ts.clone(),
-                                });
+                            // self.hisprice
+                            //     .get_mut(order.instrument_id.as_str())
+                            //     .unwrap()
+                            //     .push(TickSim {
+                            //         bid1: bp,
+                            //         ask1: ap,
+                            //         bid_volume1: bv,
+                            //         ask_volume1: av,
+                            //         last_price: lp,
+                            //         last_volume: volume.clone(),
+                            //         datetime: ts.clone(),
+                            //     });
                             self.lasttick.insert(order.instrument_id.clone(),TickSim {
                                 bid1: bp,
                                 ask1: ap,

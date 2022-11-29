@@ -3,20 +3,20 @@ use qa_rs::qamarket::matchengine::{domain::OrderDirection, orderbook::Orderbook,
 
 #[derive(PartialEq, Eq, Debug, Copy, Clone)]
 pub enum BrokerAsset {
-    YUT,
+    IX,
 }
 // 此处目的主要是实现注册功能, 避免乱七八糟的报单
 fn parse_asset(asset: &str) -> Option<BrokerAsset> {
     match asset {
-        "YUT" => Some(BrokerAsset::YUT),
+        "IX" => Some(BrokerAsset::IX),
 
         _ => None,
     }
 }
 
 fn main() {
-    let mut orderbook = Orderbook::new(BrokerAsset::YUT);
-    let order_book_id = parse_asset("YUT").unwrap();
+    let mut orderbook = Orderbook::new(BrokerAsset::IX);
+    let order_book_id = parse_asset("IX").unwrap();
 
     // create order requests
     let order_list = vec![

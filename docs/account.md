@@ -76,7 +76,7 @@ sim order
         user_id: "x2",
         order_id: "16def973-c699-4486-916d-c8a2db64f6e4",
         exchange_id: "",
-        instrument_id: "YUT",
+        instrument_id: "IX",
         direction: "SELL",
         offset: "OPEN",
         volume_orign: 4000.0,
