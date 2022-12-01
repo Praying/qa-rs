@@ -35,7 +35,7 @@ def run_weights_file(file):
         
         insertdata.extend(list(dailyqifi.values()))
     
-    db = pymongo.MongoClient('192.168.2.115').quantaxis.history
+    db = pymongo.MongoClient('192.168.2.27').quantaxis.history
     db.create_indexes([pymongo.IndexModel([("account_cookie", pymongo.ASCENDING), ("trading_day", pymongo.ASCENDING), ("portfolio_cookie", pymongo.ASCENDING)], unique=True)])
     db.insert_many(insertdata)
 
@@ -92,7 +92,7 @@ def run_market_test():
     settlemsg = market.settle()
     dailyqifi = orjson.loads(settlemsg)
     insertdata.extend(list(dailyqifi.values()))
-    db = pymongo.MongoClient('192.168.2.115').quantaxis.history
+    db = pymongo.MongoClient('192.168.2.27').quantaxis.history
     db.create_indexes([pymongo.IndexModel([ ("trading_day", pymongo.DESCENDING),("account_cookie", pymongo.ASCENDING), ("portfolio_cookie", pymongo.ASCENDING)], unique=True)])
     db.insert_many(insertdata)
     #print(market.get_mkt_slice())

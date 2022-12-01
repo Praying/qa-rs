@@ -87,7 +87,7 @@ pub struct MongoConfig {
 impl Default for MongoConfig {
     fn default() -> Self {
         Self {
-            uri: "mongodb://192.168.2.115:27017".to_owned(),
+            uri: "mongodb://192.168.2.27:27017".to_owned(),
             db: "quantaxis".to_owned(),
         }
     }

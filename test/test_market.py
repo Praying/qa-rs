@@ -23,7 +23,7 @@ def run_market_test():
     # print(market.get_portfolio())
     settlemsg = market.settle()
     dailyqifi = orjson.loads(settlemsg)
-    pymongo.MongoClient('192.168.2.115').quantaxis.history.insert_many(list(dailyqifi.values()))
+    pymongo.MongoClient('192.168.2.27').quantaxis.history.insert_many(list(dailyqifi.values()))
 
     market.set_date('2022-07-21')
     market.before_trade()
@@ -36,7 +36,7 @@ def run_market_test():
     # print(market.get_portfolio())
     settlemsg = market.settle()
     dailyqifi = orjson.loads(settlemsg)
-    pymongo.MongoClient('192.168.2.115').quantaxis.history.insert_many(list(dailyqifi.values()))
+    pymongo.MongoClient('192.168.2.27').quantaxis.history.insert_many(list(dailyqifi.values()))
     market.set_date('2022-07-22')
     market.before_trade()
     market.target_amount({
@@ -47,7 +47,7 @@ def run_market_test():
     # print(market.get_portfolio())
     settlemsg = market.settle()
     dailyqifi = orjson.loads(settlemsg)
-    pymongo.MongoClient('192.168.2.115').quantaxis.history.insert_many(list(dailyqifi.values()))
+    pymongo.MongoClient('192.168.2.27').quantaxis.history.insert_many(list(dailyqifi.values()))
 
     market.set_date('2022-07-25')
     market.before_trade()
@@ -59,7 +59,7 @@ def run_market_test():
     # print(market.get_portfolio())
     settlemsg = market.settle()
     dailyqifi = orjson.loads(settlemsg)
-    pymongo.MongoClient('192.168.2.115').quantaxis.history.insert_many(list(dailyqifi.values()))
+    pymongo.MongoClient('192.168.2.27').quantaxis.history.insert_many(list(dailyqifi.values()))
     #print(market.get_mkt_slice())
     #print(market.get_code('000001.XSHE'))
 

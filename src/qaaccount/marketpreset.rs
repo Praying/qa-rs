@@ -1067,11 +1067,11 @@ impl MarketPreset {
             unit_table: 1,
             price_tick: 0.01,
             buy_frozen_coeff: 1.0,
-            sell_frozen_coeff: 0.0,
+            sell_frozen_coeff: 1.0,
             exchange: "STOCK".to_string(),
-            commission_coeff_peramount: 0.00025,
+            commission_coeff_peramount: 0.00032,
             commission_coeff_pervol: 0.0,
-            commission_coeff_today_peramount: 0.00025,
+            commission_coeff_today_peramount: 0.00032,
             commission_coeff_today_pervol: 0.0,
         };
 

@@ -696,7 +696,10 @@ impl QA_Account {
             self.init_h(code);
         }
         let qapos = self.get_position(code).unwrap();
-
+        if code.contains("688") && amount<200.0{
+            warn!("688 maket order amount must >200");
+            return false
+        }
         match towards {
             3 => {
                 if (qapos.volume_short() - qapos.volume_short_frozen()) >= amount {
@@ -823,7 +826,7 @@ impl QA_Account {
             time.to_string()
         };
         let datetime = datetimer.as_str();
-        println!("{:#?}", datetime);
+        //println!("{:#?}", datetime);
         let order_id = match _order_id {
             "" => self.generate_order_id(),
             _ => _order_id.to_string(),

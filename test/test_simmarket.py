@@ -48,7 +48,7 @@ ou_noise = OrnsteinUhlenbeckActionNoise(mu=np.array(0))
 
 
 simbs = ['BUY', 'SELL']
-#pub= publisher_routing(exchange='CTPX', host='192.168.2.115')
+#pub= publisher_routing(exchange='CTPX', host='192.168.2.27')
 
 class QASIM():
     def __init__(self, account_num) -> None:
@@ -62,7 +62,7 @@ class QASIM():
         self.pubx = publisher_topic(exchange='CTPPRO', host='192.168.2.115', durable=True)
         self.available_obi = ['IX2301', 'IY2301', 'IZ2301']
         self.mongoclient = pymongo.MongoClient(
-                host='192.168.2.115', port=27017).QAREALTIME.account
+                host='192.168.2.27', port=27017).QAREALTIME.account
 
 
         self.init_market= dict(zip(self.available_obi, 
