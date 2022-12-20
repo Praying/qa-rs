@@ -1,5 +1,6 @@
 use crate::qaaccount::account::QA_Account;
 use crate::qaaccount::portfolio::QA_Portfolio;
+use crate::qaaccount::qaperformance::QAPerformance;
 use crate::qadata::marketcenter::{Kline, QAMarketCenter};
 use crate::qaenv::localenv::CONFIG;
 use crate::qaprotocol::qifi::account::QIFI;
@@ -115,10 +116,10 @@ impl QAMarket {
         }
         while self.schedule_queue.size() > 0 {
             let (eventname, accountname, target) = self.schedule_queue.remove().unwrap();
-            println!(
-                "[qamarket event] schedule {} - {} - {}",
-                self.today, eventname, accountname
-            );
+            // println!(
+            //     "[qamarket event] schedule {} - {} - {}",
+            //     self.today, eventname, accountname
+            // );
             match eventname.as_ref() {
                 "target_amount" => self.target(&accountname, target, slice, "open"),
                 "target_weight" => self.target_weight(&accountname, target, slice, "open"),
@@ -400,7 +401,7 @@ impl QAMarket {
     #[pyo3(name = "settle")]
     pub fn py_settle(&mut self) -> PyResult<String> {
         let slice = self.data.get_date_ref(&self.today);
-        println!("[qamarket] event settle {:#?}", self.today);
+        //println!("[qamarket] event settle {:#?}", self.today);
         let mut result = HashMap::new();
         for acc in self.reg_account.values_mut() {
             for code in acc.get_code_subscribed() {
@@ -410,10 +411,10 @@ impl QAMarket {
                     self.today.clone(),
                 )
             }
-            println!(
-                "[qamarket] account {:#?} settle {:#?}",
-                acc.account_cookie, self.today
-            );
+            // println!(
+            //     "[qamarket] account {:#?} settle {:#?}",
+            //     acc.account_cookie, self.today
+            // );
             result.insert(acc.account_cookie.clone(), acc.get_qifi_slice());
             acc.settle();
         }
@@ -466,5 +467,20 @@ impl QAMarket {
             QA_Portfolio::new(self.portfolio_name.clone(), qifislice).get_portfolio_qifi();
         let v = serde_json::to_string(&portqifi).unwrap();
         Ok(v)
+    }
+
+    #[pyo3(name = "get_tradepair")]
+    pub fn py_get_tradepair(&mut self, account_name: &str) -> PyResult<String> {
+        if self.reg_account.contains_key(account_name) {
+            let acc = self.get_account(account_name);
+            let mut tradepair = QAPerformance::new();
+            for (_, i) in acc.dailytrades.iter_mut() {
+                println!("{:#?}", i);
+                tradepair.insert_trade(i.to_owned());
+            }
+            Ok(serde_json::to_string(&tradepair.pair()).unwrap())
+        } else {
+            Err(PyErr::new::<PyTypeError, _>("Error message"))
+        }
     }
 }
