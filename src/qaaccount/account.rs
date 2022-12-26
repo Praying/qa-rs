@@ -21,6 +21,7 @@ use rayon::iter::IntoParallelRefMutIterator;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use uuid::v1::{Context, Timestamp};
+
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -578,9 +579,9 @@ impl QA_Account {
             .unwrap()
             .timestamp_nanos()
             - 28800000000000;
-        let ts = Timestamp::from_unix(&context, 1497624119, 1234);
+        
         let uuid =
-            Uuid::new_v1(ts, self.account_cookie.as_bytes()).expect("failed to generate UUID");
+            Uuid::new_v4();
         let order_id: String = uuid.to_string();
         let trade = Trade {
             seqno: self.event_id,
@@ -802,11 +803,11 @@ impl QA_Account {
     }
 
     pub fn generate_order_id(&mut self) -> String {
-        let context = Context::new(self.event_id as u16);
-        let ts = Timestamp::from_unix(&context, 1497624119, 1234);
-        let uuid =
-            Uuid::new_v1(ts, self.account_cookie.as_bytes()).expect("failed to generate UUID");
-
+        //let context = Context::new(self.event_id as u16);
+        // let ts = Timestamp::from_unix(&context, 1497624119, 1234);
+        // let uuid =
+        //     Uuid::new_v1(ts, self.account_cookie.as_bytes()).expect("failed to generate UUID");
+        let uuid = Uuid::new_v4();
         uuid.to_string()
     }
     pub fn send_order(
@@ -1246,10 +1247,20 @@ impl QA_Account {
                 } else {
                     //let pos = self.hold.get(code).unwrap();
                     let current_data = slice.get(code).unwrap();
+
+                    let price = match label {
+                        "close" => current_data.close,
+    
+                        "open" => current_data.open,
+                        _ => {
+                            println!("label error, use openprice");
+                            current_data.close
+                        }
+                    };
                     if pos.volume_long_his > 0.0 {
                         s.send((
                             code.to_owned(),
-                            current_data.close,
+                            price,
                             pos.volume_long_his,
                             "sell_close",
                             current_data.limit_down,
@@ -1258,7 +1269,7 @@ impl QA_Account {
                     if pos.volume_long_today > 0.0 {
                         s.send((
                             code.to_owned(),
-                            current_data.close,
+                            price,
                             pos.volume_long_today,
                             "sell_closetoday",
                             current_data.limit_down,
@@ -1267,7 +1278,7 @@ impl QA_Account {
                     if pos.volume_short_his > 0.0 {
                         s.send((
                             code.to_owned(),
-                            current_data.close,
+                            price,
                             pos.volume_short_his,
                             "buy_close",
                             current_data.limit_up,
@@ -1276,7 +1287,7 @@ impl QA_Account {
                     if pos.volume_short_today > 0.0 {
                         s.send((
                             code.to_owned(),
-                            current_data.close,
+                            price,
                             pos.volume_short_today,
                             "buy_closetoday",
                             current_data.limit_up,

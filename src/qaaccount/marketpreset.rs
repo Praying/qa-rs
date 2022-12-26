@@ -981,6 +981,21 @@ impl MarketPreset {
             },
         );
         market_preset.insert(
+            "IM".to_string(),
+            CodePreset {
+                name: "中证1000指数".to_string(),
+                unit_table: 200,
+                price_tick: 0.2,
+                buy_frozen_coeff: 0.12,
+                sell_frozen_coeff: 0.12,
+                exchange: "CFFEX".to_string(),
+                commission_coeff_peramount: 2.301e-05,
+                commission_coeff_pervol: 0.0,
+                commission_coeff_today_peramount: 0.00034501,
+                commission_coeff_today_pervol: 0.0,
+            },
+        );
+        market_preset.insert(
             "IF".to_string(),
             CodePreset {
                 name: "沪深300指数".to_string(),

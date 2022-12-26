@@ -15,9 +15,7 @@ class Strategy:
             data_path: str,
 
     ):
-        """
-        mode -> npdf | polars
-        """
+
         self.market = core.QAMarket(data_path)
         self.hold_period = 0
 
