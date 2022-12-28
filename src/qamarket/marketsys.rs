@@ -1,6 +1,6 @@
 use crate::qaaccount::account::QA_Account;
 use crate::qaaccount::portfolio::QA_Portfolio;
-use crate::qaaccount::qaperformance::QAPerformance;
+use crate::qaanalysis::qifianalysis::QIFIAnalysis;
 use crate::qadata::marketcenter::{Kline, QAMarketCenter};
 use crate::qaenv::localenv::CONFIG;
 use crate::qaprotocol::qifi::account::QIFI;
@@ -21,6 +21,7 @@ pub struct QAMarket {
     pub market_event: DataFrame,
     pub today: String,
     pub schedule_queue: Queue<(String, String, HashMap<String, f64>)>,
+    pub cache: HashMap<String, Vec<QIFI>>,
 }
 
 impl QAMarket {
@@ -32,8 +33,18 @@ impl QAMarket {
             market_event: DataFrame::default(),
             today: "1970-01-01".to_string(),
             schedule_queue: queue![],
+            cache: HashMap::new(),
         }
     }
+    pub fn reinit(&mut self){
+        self.reg_account = HashMap::new();
+        self.portfolio_name = String::from("");
+        self.market_event = DataFrame::default();
+        self.today = "1970-01-01".to_string();
+        self.schedule_queue = queue![];
+        self.cache = HashMap::new();
+    }
+
     pub fn new_from_path(path: &str, portfolio_name: &str) -> Self {
         Self {
             reg_account: HashMap::new(),
@@ -42,6 +53,7 @@ impl QAMarket {
             market_event: DataFrame::default(),
             today: "1970-01-01".to_string(),
             schedule_queue: queue![],
+            cache: HashMap::new(),
         }
     }
     pub fn new_for_realtime(portfolio_name: &str) -> Self {
@@ -52,6 +64,7 @@ impl QAMarket {
             market_event: DataFrame::default(),
             today: "1970-01-01".to_string(),
             schedule_queue: queue![],
+            cache: HashMap::new(),
         }
     }
 
@@ -276,18 +289,32 @@ impl QAMarket {
             market_event: DataFrame::default(),
             today: "1970-01-01".to_string(),
             schedule_queue: queue![],
+            cache: HashMap::new(),
         }
+    }
+
+    #[pyo3(name = "reinit")]
+    pub fn py_reinit(&mut self, portfolio_name: &str) {
+        self.reg_account = HashMap::new();
+        self.portfolio_name = portfolio_name.to_string();
+        self.market_event = DataFrame::default();
+        self.today = "1970-01-01".to_string();
+        self.schedule_queue = queue![];
+        self.cache = HashMap::new();
     }
 
     #[pyo3(name = "run")]
     pub fn run_py(&mut self, start: &str, end: &str) {
         self.run(start, end)
     }
+
     #[pyo3(name = "init_market")]
     pub fn init_market(&mut self, account_list: HashMap<String, f64>) {
         for acc in account_list.keys() {
-            self.register_account(acc, account_list[acc])
+            self.register_account(acc, account_list[acc]);
+            self.cache.insert(acc.to_string(), Vec::new());
         }
+        self.cache.insert(self.portfolio_name.clone(), Vec::new());
     }
     pub fn init(&mut self) {}
 
@@ -411,16 +438,20 @@ impl QAMarket {
                     self.today.clone(),
                 )
             }
-            // println!(
-            //     "[qamarket] account {:#?} settle {:#?}",
-            //     acc.account_cookie, self.today
-            // );
-            result.insert(acc.account_cookie.clone(), acc.get_qifi_slice());
+            let qifi_slice = acc.get_qifi_slice();
+            let cache_acc = self.cache.get_mut(&qifi_slice.account_cookie).unwrap();
+            cache_acc.push(qifi_slice.clone());
+
+            result.insert(acc.account_cookie.clone(),qifi_slice);
             acc.settle();
         }
         let portqifi =
             QA_Portfolio::new(self.portfolio_name.clone(), result.clone()).get_portfolio_qifi();
+        
+        let cache_port = self.cache.get_mut(&self.portfolio_name).unwrap();
+        cache_port.push(portqifi.clone());
         result.insert(self.portfolio_name.clone(), portqifi);
+
         let v = serde_json::to_string(&result).unwrap();
         Ok(v)
     }
@@ -472,13 +503,10 @@ impl QAMarket {
     #[pyo3(name = "get_tradepair")]
     pub fn py_get_tradepair(&mut self, account_name: &str) -> PyResult<String> {
         if self.reg_account.contains_key(account_name) {
-            let acc = self.get_account(account_name);
-            let mut tradepair = QAPerformance::new();
-            for (_, i) in acc.dailytrades.iter_mut() {
-                println!("{:#?}", i);
-                tradepair.insert_trade(i.to_owned());
-            }
-            Ok(serde_json::to_string(&tradepair.pair()).unwrap())
+
+            let tradeanalysis = QIFIAnalysis::new(account_name.to_string(), self.cache.get(account_name).unwrap().clone());
+            let tradepair = tradeanalysis.get_tradepair();
+            Ok(serde_json::to_string(&tradepair).unwrap())
         } else {
             Err(PyErr::new::<PyTypeError, _>("Error message"))
         }
