@@ -20,7 +20,7 @@ pub struct QAMarket {
     pub data: QAMarketCenter,
     pub market_event: DataFrame,
     pub today: String,
-    pub schedule_queue: Queue<(String, String, HashMap<String, f64>)>,
+    pub schedule_queue: Queue<(String, String, HashMap<String, f64>, String)>,
     pub cache: HashMap<String, Vec<QIFI>>,
 }
 
@@ -128,14 +128,14 @@ impl QAMarket {
             }
         }
         while self.schedule_queue.size() > 0 {
-            let (eventname, accountname, target) = self.schedule_queue.remove().unwrap();
+            let (eventname, accountname, target, model) = self.schedule_queue.remove().unwrap();
             // println!(
             //     "[qamarket event] schedule {} - {} - {}",
             //     self.today, eventname, accountname
             // );
             match eventname.as_ref() {
-                "target_amount" => self.target(&accountname, target, slice, "open"),
-                "target_weight" => self.target_weight(&accountname, target, slice, "open"),
+                "target_amount" => self.target(&accountname, target, slice, &model),
+                "target_weight" => self.target_weight(&accountname, target, slice, &model),
                 _ => {
                     println!("{} is not supported", eventname)
                 }
@@ -173,6 +173,15 @@ impl QAMarket {
                     "target_amount".to_string(),
                     account_name.to_string(),
                     target_panel,
+                    "open".to_string()
+                ));
+            }
+            | "nextclose" | "next_close" => {
+                self.schedule_queue.add((
+                    "target_amount".to_string(),
+                    account_name.to_string(),
+                    target_panel,
+                    "close".to_string()
                 ));
             }
             _ => {
@@ -200,6 +209,15 @@ impl QAMarket {
                     "target_weight".to_string(),
                     account_name.to_string(),
                     target_panel,
+                    "open".to_string()
+                ));
+            }
+        |   "next_close"| "nextclose" =>{
+                self.schedule_queue.add((
+                    "target_weight".to_string(),
+                    account_name.to_string(),
+                    target_panel,
+                    "close".to_string()
                 ));
             }
             _ => {
