@@ -529,4 +529,12 @@ impl QAMarket {
             Err(PyErr::new::<PyTypeError, _>("Error message"))
         }
     }
+
+    #[pyo3(name = "finish")]
+    pub fn py_finish(&mut self) {
+        for acc in self.reg_account.values_mut(){
+            let slice = self.data.get_date_ref(&self.today);
+            acc.target_weight(HashMap::new(), slice, "close")
+        }
+    }
 }

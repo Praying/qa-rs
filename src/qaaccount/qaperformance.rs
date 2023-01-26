@@ -103,6 +103,9 @@ impl QAPerformance_Single {
         }
     }
     pub fn insert_trade(&mut self, trade: Trade) {
+        if trade.volume < 1.0 {
+            return;
+        }
         match trade.offset.as_str() {
             "OPEN" => {
                 let direction = trade.direction.as_str();
@@ -127,7 +130,7 @@ impl QAPerformance_Single {
                 //println!("{:#?}", u);
 
                 let mut codeset = self.market_set.get(trade.instrument_id.as_ref());
-
+                //println!("{:#?}", u);
                 let f = u.get_mut(0).unwrap();
 
                 if trade.volume > f.amount {
