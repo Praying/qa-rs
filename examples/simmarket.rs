@@ -31,7 +31,7 @@ fn main() {
     // for slice in market.get_allaccount_qifi() {
     //     client.save_his_qifi_slice(slice)
     // }
-    println!("hisdata \n {:#?}",market.get_l1_tick_human("IX2301"));
+    println!("hisdata \n {:#?}", market.get_l1_tick_human("IX2301"));
 
     //println!("{}", parse_datestamp(1669596950000000000));
 }

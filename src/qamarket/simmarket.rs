@@ -9,11 +9,11 @@ use crate::qamarket::matchengine::{
 use crate::qaprotocol::qifi::account::QIFI;
 use crate::qautil::parse_datestamp;
 use chrono::Utc;
-use uuid::Uuid;
 use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 //use crate::qamarket::order_book::OrderBook;
 
 /// realtime market with lots of account reg
@@ -61,10 +61,9 @@ pub struct TickSim {
     pub ask_volume1: f64,
     pub last_price: f64,
     pub last_volume: f64,
-    
 }
 impl TickSim {
-    pub fn to_human(&self) -> (String,f64, f64, f64, f64, f64, f64, ) {
+    pub fn to_human(&self) -> (String, f64, f64, f64, f64, f64, f64) {
         // println!("bid1:{},ask1:{},bid_volume1:{},ask_volume1:{},last_price:{},last_volume:{},datetime:{}",
         // self.bid1,self.ask1,self.bid_volume1,self.ask_volume1,self.last_price,self.last_volume,parse_datestamp( self.datetime));
         (
@@ -75,7 +74,6 @@ impl TickSim {
             self.ask_volume1,
             self.last_price,
             self.last_volume,
-            
         )
     }
 }
@@ -97,25 +95,26 @@ pub struct QASIMMarket {
 impl QASIMMarket {
     pub fn new() -> Self {
         let mut match_engine = HashMap::new();
-        
 
         let mut matchingE_id = HashMap::new();
-        
 
         let mut hisprice = HashMap::new();
-        
+
         let mut lasttick = HashMap::new();
         for i in ["IX2301", "IY2301", "IZ2301"].iter() {
-            lasttick.insert(i.to_string(), TickSim {
-                datetime: 0,
-                bid1: 0.0,
-                ask1: 0.0,
-                bid_volume1: 0.0,
-                ask_volume1: 0.0,
-                last_price: 0.0,
-                last_volume: 0.0,
-            });
-            
+            lasttick.insert(
+                i.to_string(),
+                TickSim {
+                    datetime: 0,
+                    bid1: 0.0,
+                    ask1: 0.0,
+                    bid_volume1: 0.0,
+                    ask_volume1: 0.0,
+                    last_price: 0.0,
+                    last_volume: 0.0,
+                },
+            );
+
             hisprice.insert(i.to_string(), vec![]);
             matchingE_id.insert(i.to_string(), HashMap::new());
         }
@@ -131,7 +130,7 @@ impl QASIMMarket {
             portfolio_name: "qasim_market".to_string(),
             lastpricepanel: HashMap::new(),
             hisprice,
-            lasttick
+            lasttick,
         }
     }
 
@@ -157,7 +156,6 @@ impl QASIMMarket {
     //     orders
     // }
 
-    
     pub fn register_account(&mut self, account_name: &str, init_cash: f64) {
         if self.reg_account.contains_key(account_name) {
             println!("{} is already registered", account_name);
@@ -261,10 +259,7 @@ impl QASIMMarket {
     pub fn get_l1_tick(&self, code: &str) -> &Vec<TickSim> {
         self.hisprice.get(code).unwrap()
     }
-    pub fn get_l1_tick_human(
-        &self,
-        code: &str,
-    ) -> Vec<(String, f64, f64, f64, f64, f64, f64, )> {
+    pub fn get_l1_tick_human(&self, code: &str) -> Vec<(String, f64, f64, f64, f64, f64, f64)> {
         let price = self.hisprice.get(code).unwrap().clone();
         price.iter().map(|x| x.to_human()).collect()
     }
@@ -322,7 +317,9 @@ impl QASIMMarket {
                             //         last_volume: volume.clone(),
                             //         datetime: ts.clone(),
                             //     });
-                            self.lasttick.insert(order.instrument_id.clone(),TickSim {
+                            self.lasttick.insert(
+                                order.instrument_id.clone(),
+                                TickSim {
                                     bid1: bp,
                                     ask1: ap,
                                     bid_volume1: bv,
@@ -330,7 +327,8 @@ impl QASIMMarket {
                                     last_price: lp,
                                     last_volume: volume.clone(),
                                     datetime: ts.clone(),
-                                });
+                                },
+                            );
                             // 成交事件
                             // 成交需要通知 双方账户
                             //let order = self.orders.get_mut(order_id).unwrap();
@@ -380,15 +378,18 @@ impl QASIMMarket {
                             //         last_volume: volume.clone(),
                             //         datetime: ts.clone(),
                             //     });
-                            self.lasttick.insert(order.instrument_id.clone(),TickSim {
-                                bid1: bp,
-                                ask1: ap,
-                                bid_volume1: bv,
-                                ask_volume1: av,
-                                last_price: lp,
-                                last_volume: volume.clone(),
-                                datetime: ts.clone(),
-                            });
+                            self.lasttick.insert(
+                                order.instrument_id.clone(),
+                                TickSim {
+                                    bid1: bp,
+                                    ask1: ap,
+                                    bid_volume1: bv,
+                                    ask_volume1: av,
+                                    last_price: lp,
+                                    last_volume: volume.clone(),
+                                    datetime: ts.clone(),
+                                },
+                            );
                         }
                         Success::Amended {
                             id,
@@ -418,7 +419,6 @@ impl QASIMMarket {
     }
 }
 
-
 #[pymethods]
 impl QASIMMarket {
     #[new]
@@ -438,7 +438,15 @@ impl QASIMMarket {
     }
 
     #[pyo3(name = "insert_order")]
-    pub fn py_insert_order(&mut self, account_cookie:&str, code:&str, price:f64, amount:f64, direction:&str, offset:&str) {
+    pub fn py_insert_order(
+        &mut self,
+        account_cookie: &str,
+        code: &str,
+        price: f64,
+        amount: f64,
+        direction: &str,
+        offset: &str,
+    ) {
         self.insert_order(account_cookie, code, price, amount, direction, offset);
     }
     #[pyo3(name = "plot_askbid")]
@@ -447,26 +455,26 @@ impl QASIMMarket {
     }
 
     #[pyo3(name = "get_l1tick")]
-    pub fn py_l1tick(&mut self, ) -> String {
+    pub fn py_l1tick(&mut self) -> String {
         serde_json::to_string(&self.hisprice).unwrap()
     }
 
     #[pyo3(name = "get_lastprice")]
-    pub fn py_get_lastprice(&mut self, ) -> String {
+    pub fn py_get_lastprice(&mut self) -> String {
         serde_json::to_string(&self.lastpricepanel).unwrap()
     }
     #[pyo3(name = "get_lasttick")]
-    pub fn py_get_lasttick(&mut self, ) -> String {
+    pub fn py_get_lasttick(&mut self) -> String {
         serde_json::to_string(&self.lasttick).unwrap()
     }
     #[pyo3(name = "get_all_account")]
-    pub fn py_get_all_account(&mut self, ) -> PyResult<String> {
+    pub fn py_get_all_account(&mut self) -> PyResult<String> {
         self.pub_marketdata_to_allaccount();
         let qifislice: HashMap<String, QIFI> = self
-        .reg_account
-        .par_iter_mut()
-        .map(|(accname, acc)| (accname.clone(), acc.get_qifi_slice()))
-        .collect::<HashMap<String, QIFI>>();
+            .reg_account
+            .par_iter_mut()
+            .map(|(accname, acc)| (accname.clone(), acc.get_qifi_slice()))
+            .collect::<HashMap<String, QIFI>>();
         // let portqifi =
         //     QA_Portfolio::new(self.portfolio_name.clone(), qifislice).get_portfolio_qifi();
         let v = serde_json::to_string(&qifislice).unwrap();

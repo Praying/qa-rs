@@ -36,7 +36,7 @@ impl QAMarket {
             cache: HashMap::new(),
         }
     }
-    pub fn reinit(&mut self){
+    pub fn reinit(&mut self) {
         self.reg_account = HashMap::new();
         self.portfolio_name = String::from("");
         self.market_event = DataFrame::default();
@@ -173,15 +173,15 @@ impl QAMarket {
                     "target_amount".to_string(),
                     account_name.to_string(),
                     target_panel,
-                    "open".to_string()
+                    "open".to_string(),
                 ));
             }
-            | "nextclose" | "next_close" => {
+            "nextclose" | "next_close" => {
                 self.schedule_queue.add((
                     "target_amount".to_string(),
                     account_name.to_string(),
                     target_panel,
-                    "close".to_string()
+                    "close".to_string(),
                 ));
             }
             _ => {
@@ -209,15 +209,15 @@ impl QAMarket {
                     "target_weight".to_string(),
                     account_name.to_string(),
                     target_panel,
-                    "open".to_string()
+                    "open".to_string(),
                 ));
             }
-        |   "next_close"| "nextclose" =>{
+            "next_close" | "nextclose" => {
                 self.schedule_queue.add((
                     "target_weight".to_string(),
                     account_name.to_string(),
                     target_panel,
-                    "close".to_string()
+                    "close".to_string(),
                 ));
             }
             _ => {
@@ -460,12 +460,12 @@ impl QAMarket {
             let cache_acc = self.cache.get_mut(&qifi_slice.account_cookie).unwrap();
             cache_acc.push(qifi_slice.clone());
 
-            result.insert(acc.account_cookie.clone(),qifi_slice);
+            result.insert(acc.account_cookie.clone(), qifi_slice);
             acc.settle();
         }
         let portqifi =
             QA_Portfolio::new(self.portfolio_name.clone(), result.clone()).get_portfolio_qifi();
-        
+
         let cache_port = self.cache.get_mut(&self.portfolio_name).unwrap();
         cache_port.push(portqifi.clone());
         result.insert(self.portfolio_name.clone(), portqifi);
@@ -521,8 +521,10 @@ impl QAMarket {
     #[pyo3(name = "get_tradepair")]
     pub fn py_get_tradepair(&mut self, account_name: &str) -> PyResult<String> {
         if self.reg_account.contains_key(account_name) {
-
-            let tradeanalysis = QIFIAnalysis::new(account_name.to_string(), self.cache.get(account_name).unwrap().clone());
+            let tradeanalysis = QIFIAnalysis::new(
+                account_name.to_string(),
+                self.cache.get(account_name).unwrap().clone(),
+            );
             let tradepair = tradeanalysis.get_tradepair();
             Ok(serde_json::to_string(&tradepair).unwrap())
         } else {
@@ -532,7 +534,7 @@ impl QAMarket {
 
     #[pyo3(name = "finish")]
     pub fn py_finish(&mut self) {
-        for acc in self.reg_account.values_mut(){
+        for acc in self.reg_account.values_mut() {
             let slice = self.data.get_date_ref(&self.today);
             acc.target_weight(HashMap::new(), slice, "close")
         }
