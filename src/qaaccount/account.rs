@@ -863,6 +863,7 @@ impl QA_Account {
                     };
 
                     let frozen = coeff * amount_adj;
+                    self.money -= frozen;
                     self.frozen.insert(
                         order_id.clone(),
                         QA_Frozen {
