@@ -539,4 +539,23 @@ impl QAMarket {
             acc.target_weight(HashMap::new(), slice, "close")
         }
     }
+
+
+    #[pyo3(name = "get_pos_value")]
+    pub fn py_get_pos_value(&mut self, account_name: &str) -> PyResult<HashMap<String, f64>> {
+        if self.reg_account.contains_key(account_name) {
+            Ok(self.get_account(account_name).get_account_pos_value())
+        } else {
+            Err(PyErr::new::<PyTypeError, _>("Error message"))
+        }
+    }
+
+    #[pyo3(name = "get_pos_weight")]
+    pub fn py_get_pos_weight(&mut self, account_name: &str) -> PyResult<HashMap<String, f64>> {
+        if self.reg_account.contains_key(account_name) {
+            Ok(self.get_account(account_name).get_account_pos_weight())
+        } else {
+            Err(PyErr::new::<PyTypeError, _>("Error message"))
+        }
+    }
 }

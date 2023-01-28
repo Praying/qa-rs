@@ -331,6 +331,38 @@ impl QA_Account {
         }
     }
 
+    pub fn get_account_pos_value(&mut self) -> HashMap<String, f64> {
+        let mut weight: HashMap<String, f64> = HashMap::new();
+
+        for pos in self.hold.values_mut() {
+            weight.insert(
+                pos.instrument_id.clone(),
+                pos.lastest_price
+                    * (pos.volume_long() - pos.volume_short())
+                    * pos.preset.unit_table as f64,
+            );
+        }
+
+        weight.insert("cash".to_string(), self.money);
+        weight
+    }
+    pub fn get_account_pos_weight(&mut self) -> HashMap<String, f64> {
+        let mut weight: HashMap<String, f64> = HashMap::new();
+        let balance = self.get_balance();
+        for pos in self.hold.values_mut() {
+            weight.insert(
+                pos.instrument_id.clone(),
+                pos.lastest_price
+                    * (pos.volume_long() - pos.volume_short())
+                    * pos.preset.unit_table as f64
+                    / balance,
+            );
+        }
+
+        weight.insert("cash".to_string(), self.money / balance);
+        weight
+    }
+
     /// 创建QIFI的账户切片， 注意他是一个结构体
     pub fn get_qifi_slice(&mut self) -> QIFI {
         let mut pos: HashMap<String, Position> = HashMap::new();
@@ -568,7 +600,6 @@ impl QA_Account {
             format!("split event code{}  ratio{} amount{}", code, ratio, amount),
         );
         self.event_id += 1;
-        let context = Context::new(self.event_id as u16);
 
         let datetimer = if self.time.len() == 10 {
             format!("{} 00:00:00", self.time.to_string())
@@ -692,10 +723,15 @@ impl QA_Account {
         order_id: String,
         datetime: &str,
     ) -> Result<QAOrder, ()> {
+        if amount == 0.0 {
+            warn!("amount is 0");
+            return Err(());
+        }
         if self.hold.contains_key(code) {
         } else {
             self.init_h(code);
         }
+
         let qapos = self.get_position(code).unwrap();
         if code.contains("688") && amount < 200.0 {
             warn!("688 maket order amount must >200");
@@ -843,11 +879,12 @@ impl QA_Account {
 
                     let amount_adj = match adjust_market(code).as_ref() {
                         "stock_cn" => {
-                            let v = 100.0 * (self.money / (coeff * 100.0)).floor() as f64;
+                            let v = 100.0 * (self.money / (coeff * 1.0015 * 100.0)).floor() as f64;
                             if v < 100.0 {
                                 return Err(());
+                            } else {
+                                v
                             }
-                            v
                         }
                         "future_cn" => {
                             let v = (self.money / coeff).floor() as f64;
@@ -871,6 +908,11 @@ impl QA_Account {
                             coeff,
                             money: frozen,
                         },
+                    );
+
+                    warn!(
+                        "{}- {}   调整后的数量 {:#?} price{} frozen{},money_after{}",
+                        datetime, code, amount_adj, price, frozen, self.money
                     );
                     let order = QAOrder::new(
                         self.account_cookie.clone(),
@@ -956,7 +998,7 @@ impl QA_Account {
                     "backtest" => {
                         self.receive_deal(
                             code.parse().unwrap(),
-                            amount,
+                            order.volume,
                             price,
                             datetime.parse().unwrap(),
                             order_id.clone(),
@@ -978,7 +1020,7 @@ impl QA_Account {
                                 instrument_id: code.clone().to_string(),
                                 direction,
                                 offset,
-                                volume_orign: amount,
+                                volume_orign: order.volume,
                                 price_type: price_type.to_string(),
                                 limit_price: price,
                                 time_condition: "AND".to_string(),
@@ -997,7 +1039,7 @@ impl QA_Account {
 
                         self.receive_deal_real(
                             code.parse().unwrap(),
-                            amount,
+                            order.volume,
                             price,
                             datetime.parse().unwrap(),
                             order_id.clone(),
@@ -1019,7 +1061,7 @@ impl QA_Account {
                                 instrument_id: code.clone().to_string(),
                                 direction,
                                 offset,
-                                volume_orign: amount,
+                                volume_orign: order.volume,
                                 price_type: price_type.to_string(),
                                 limit_price: price,
                                 time_condition: "AND".to_string(),
@@ -1027,7 +1069,7 @@ impl QA_Account {
                                 insert_date_time: Utc::now().timestamp_nanos(),
                                 exchange_order_id: Uuid::new_v4().to_string(),
                                 status: "ALIVE".to_string(),
-                                volume_left: amount,
+                                volume_left: order.volume,
                                 last_msg: "".to_string(),
                             },
                         );
@@ -1696,7 +1738,7 @@ impl QA_Account {
         slice: &HashMap<String, Kline>,
         label: &str,
     ) {
-        let total_money = self.get_cash();
+        let total_money = self.get_balance(); //#.clone();
         let res_adjust = target_panel
             .clone()
             .par_iter()
