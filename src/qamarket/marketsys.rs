@@ -540,7 +540,6 @@ impl QAMarket {
         }
     }
 
-
     #[pyo3(name = "get_pos_value")]
     pub fn py_get_pos_value(&mut self, account_name: &str) -> PyResult<HashMap<String, f64>> {
         if self.reg_account.contains_key(account_name) {
