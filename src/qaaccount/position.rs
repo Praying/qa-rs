@@ -53,6 +53,7 @@ pub struct QA_Postions {
     pub position_cost_long: f64,
     pub position_price_short: f64,
     pub position_cost_short: f64,
+    position_profit_closetoday: f64,
     //# 平仓字段
     pub open_price_long: f64,
     pub open_cost_long: f64,
@@ -136,6 +137,7 @@ impl QA_Postions {
 
             position_price_short: 0.0,
             position_cost_short: 0.0,
+            position_profit_closetoday: 0.0,
 
             open_price_long: 0.0,
             open_cost_long: 0.0,
@@ -190,6 +192,7 @@ impl QA_Postions {
 
             volume_short_frozen_today: 0.0,
             volume_short_frozen_his: 0.0,
+            position_profit_closetoday: 0.0,
 
             margin_long: 0.0,
             margin_short: 0.0,
@@ -254,6 +257,7 @@ impl QA_Postions {
         self.position_price_short = self.lastest_price;
         self.position_cost_long = self.position_price_long * self.volume_long();
         self.position_cost_short = self.position_price_short * self.volume_short();
+        self.position_profit_closetoday = 0.0;
     }
 
     pub async fn settle_async(&mut self) {
@@ -339,7 +343,7 @@ impl QA_Postions {
             - self.lastest_price * self.volume_short() * self.preset.unit_table as f64
     }
     pub fn position_profit(&mut self) -> f64 {
-        self.position_profit_long() + self.position_profit_short()
+        self.position_profit_long() + self.position_profit_short() + self.position_profit_closetoday
     }
 
     pub fn volume_long(&mut self) -> f64 {
@@ -433,7 +437,11 @@ impl QA_Postions {
                     self.position_cost_short * (volume_short - amount) / volume_short;
                 self.open_cost_short =
                     self.open_cost_short * (volume_short - amount) / volume_short;
-
+                self.position_profit_closetoday +=
+                    (self.position_price_short - price) * amount * self.preset.unit_table as f64;
+                self.position_price_short = (self.position_price_short * self.volume_short()
+                    - price * amount)
+                    / (self.volume_short() - amount);
                 self.volume_short_frozen_today -= amount;
 
                 //println!("amount  {},position_price_short {}", amount, self.position_price_short);
@@ -449,6 +457,7 @@ impl QA_Postions {
                 //println!("BUY CLOSE XX MV{:#?}", margin_value);
 
                 profit = (self.open_price_short - price) * amount * self.preset.unit_table as f64;
+
                 self.margin_short += margin_value;
             }
             -1 => {
@@ -460,7 +469,14 @@ impl QA_Postions {
                         self.position_cost_long * (volume_long - amount) / volume_long;
                     self.open_cost_long =
                         self.open_cost_long * (volume_long - amount) / volume_long;
-
+                    self.position_price_long = (self.position_price_long * self.volume_long()
+                        - price * amount)
+                        / (self.volume_long() - amount);
+                    self.position_profit_closetoday +=
+                        (price - self.position_price_long) * amount * self.preset.unit_table as f64;
+                    self.position_price_long = (self.position_price_long * self.volume_long()
+                        - price * amount)
+                        / (self.volume_long() - amount);
                     self.volume_long_frozen_today -= amount;
                     margin_value = -1.0
                         * (self.open_price_long
@@ -481,7 +497,11 @@ impl QA_Postions {
                 self.position_cost_long =
                     self.position_cost_long * (volume_long - amount) / volume_long;
                 self.open_cost_long = self.open_cost_long * (volume_long - amount) / volume_long;
-
+                self.position_profit_closetoday +=
+                    (price - self.position_price_long) * amount * self.preset.unit_table as f64;
+                self.position_price_long = (self.position_price_long * self.volume_long()
+                    - price * amount)
+                    / (self.volume_long() - amount);
                 self.volume_long_frozen_today -= amount;
                 margin_value = -1.0
                     * (self.open_price_long
@@ -489,6 +509,7 @@ impl QA_Postions {
                         * self.preset.unit_table as f64
                         * self.preset.buy_frozen_coeff);
                 profit = (price - self.open_price_long) * amount * self.preset.unit_table as f64;
+
                 self.margin_long += margin_value;
             }
             _ => {}

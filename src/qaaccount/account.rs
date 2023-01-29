@@ -66,43 +66,44 @@ pub struct account_info {
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct account {
-    pub user_id: String,
     // 用户号 兼容diff协议, ==> 实盘则为具体账户号
-    pub currency: String,
+    pub user_id: String,
     // 货币属性 兼容diff协议
-    pub pre_balance: f64,
+    pub currency: String,
     // 上一个交易日的结算权益
-    pub deposit: f64,
+    pub pre_balance: f64,
     // 今日转入资金
-    pub withdraw: f64,
+    pub deposit: f64,
     // 今日转出资金
-    pub WithdrawQuota: f64,
+    pub withdraw: f64,
     // 当前可取字段(QIFI 独有)
-    pub close_profit: f64,
+    pub WithdrawQuota: f64,
     // 平仓盈亏
-    pub commission: f64,
+    pub close_profit: f64,
     // 手续费
-    pub premium: f64,
+    pub commission: f64,
     // 附加费
-    pub static_balance: f64,
+    pub premium: f64,
     // 静态权益(一般= pre_balance)
-    pub position_profit: f64,
+    pub static_balance: f64,
     // 持仓盈亏
-    pub float_profit: f64,
+    pub position_profit: f64,
     // 浮动盈亏
-    pub balance: f64,
+    pub float_profit: f64,
     // 当前权益
-    pub margin: f64,
+    pub balance: f64,
     // 保证金
-    pub frozen_margin: f64,
+    pub margin: f64,
     // 冻结保证金
-    pub frozen_commission: f64,
+    pub frozen_margin: f64,
     // 冻结手续费
-    pub frozen_premium: f64,
+    pub frozen_commission: f64,
     // 冻结附加费用
-    pub available: f64,
+    pub frozen_premium: f64,
     // 可用资金
-    pub risk_ratio: f64, // 风险度
+    pub available: f64,
+    // 风险度
+    pub risk_ratio: f64,
 }
 
 #[pyclass]
@@ -312,7 +313,7 @@ impl QA_Account {
         self.cash.last().unwrap().to_owned()
     }
     pub fn get_riskratio(&mut self) -> f64 {
-        0.0
+        self.get_margin() / self.accounts.balance
     }
 
     pub fn get_mom_slice(&mut self) -> QAMOMSlice {
@@ -514,19 +515,21 @@ impl QA_Account {
         self.hold
             .retain(|_, pos| pos.volume_long() != 0.0 || pos.volume_short() != 0.0);
         // init the next day cash
-        let balance_settle =
-            self.accounts.pre_balance + self.accounts.close_profit - self.accounts.commission;
+        let balance_settle = self.get_balance();
+        //self.accounts.pre_balance + self.accounts.close_profit - self.accounts.commission;
+        let static_balance =
+            self.accounts.static_balance + self.accounts.close_profit - self.accounts.commission;
         self.accounts = account {
             user_id: self.account_cookie.to_string(),
             currency: "CNY".to_string(),
             pre_balance: balance_settle.clone(),
             deposit: 0.0,
             withdraw: 0.0,
-            WithdrawQuota: balance_settle.clone(),
+            WithdrawQuota: self.money.clone(),
             close_profit: 0.0,
             commission: 0.0,
             premium: 0.0,
-            static_balance: balance_settle.clone(),
+            static_balance: static_balance,
             position_profit: 0.0,
             float_profit: 0.0,
             balance: balance_settle.clone(),
@@ -879,7 +882,7 @@ impl QA_Account {
 
                     let amount_adj = match adjust_market(code).as_ref() {
                         "stock_cn" => {
-                            let v = 100.0 * (self.money / (coeff * 1.0015 * 100.0)).floor() as f64;
+                            let v = 100.0 * (self.money / (coeff * 1.002 * 100.0)).floor() as f64;
                             if v < 100.0 {
                                 return Err(());
                             } else {
@@ -887,7 +890,7 @@ impl QA_Account {
                             }
                         }
                         "future_cn" => {
-                            let v = (self.money / coeff).floor() as f64;
+                            let v = (self.money / (coeff * 1.002)).floor() as f64;
                             if v < 1.0 {
                                 return Err(());
                             } else {
@@ -900,31 +903,35 @@ impl QA_Account {
                     };
 
                     let frozen = coeff * amount_adj;
-                    self.money -= frozen;
-                    self.frozen.insert(
-                        order_id.clone(),
-                        QA_Frozen {
-                            amount,
-                            coeff,
-                            money: frozen,
-                        },
-                    );
+                    if self.money < frozen {
+                        return Err(());
+                    } else {
+                        self.money -= frozen;
+                        self.frozen.insert(
+                            order_id.clone(),
+                            QA_Frozen {
+                                amount,
+                                coeff,
+                                money: frozen,
+                            },
+                        );
 
-                    warn!(
-                        "{}- {}   调整后的数量 {:#?} price{} frozen{},money_after{}",
-                        datetime, code, amount_adj, price, frozen, self.money
-                    );
-                    let order = QAOrder::new(
-                        self.account_cookie.clone(),
-                        code.clone().to_string(),
-                        towards,
-                        "".to_string(),
-                        datetime.to_string(),
-                        amount_adj,
-                        price,
-                        order_id.clone(),
-                    );
-                    return Ok(order);
+                        warn!(
+                            "{}- {}   调整后的数量 {:#?} price{} frozen{},money_after{}",
+                            datetime, code, amount_adj, price, frozen, self.money
+                        );
+                        let order = QAOrder::new(
+                            self.account_cookie.clone(),
+                            code.clone().to_string(),
+                            towards,
+                            "".to_string(),
+                            datetime.to_string(),
+                            amount_adj,
+                            price,
+                            order_id.clone(),
+                        );
+                        return Ok(order);
+                    }
                 }
             }
             _ => return Err(()),

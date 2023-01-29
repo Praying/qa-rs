@@ -1,141 +1,112 @@
-# test  for qars account
 import qars
 import orjson
-import math
-import pandas as pd
-class TestAccount:
+
+class TestAcc:
+
+    def test_acc_settle(self):
+        print('test_acc_settle')
+        #        account_cookie: &str,
+        # portfolio_cookie: &str,
+        # init_cash: f64,
+        # environment: &str,
+        acc = qars.core.QA_Account('test_acc', 'portfolio', 20000000, "real")
+        acc.buy_open("000001.XSHE", 200,'2021-01-01', 20)
+        acc.on_pricechange("000001.XSHE", 21, '2021-01-01')
+
+        res = orjson.loads(acc.get_qifi())
+        assert res['accounts']['balance'] == 20000198.72
+        assert res['accounts']['pre_balance'] == 20000000.0
+        assert res['accounts']['static_balance'] == 20000000.0
+        assert res['accounts']['margin'] == 4000.0
+        assert res['accounts']['available'] == 19995998.72
+        assert res['accounts']['static_balance'] + res['accounts']['float_profit'] + res['accounts']['close_profit'] - res['accounts']['commission'] == res['accounts']['pre_balance'] + res['accounts']['position_profit'] - res['accounts']['commission']
+        print(res['accounts'])
+
+        {'user_id': 'test_acc', 'currency': 'CNY', 'pre_balance': 20000000.0, 'deposit': 0.0, 'withdraw': 0.0, 'WithdrawQuota': 20000000.0, 'close_profit': 0.0, 'commission': 1.28, 'premium': 0.0, 'static_balance': 20000000.0, 'position_profit': 200.0, 'float_profit': 200.0, 'balance': 20000198.72, 'margin': 4000.0, 'frozen_margin': 0.0, 'frozen_commission': 0.0, 'frozen_premium': 0.0, 'available': 19995998.72, 'risk_ratio': 0.0002}
+
+        acc.settle()
+        resx = orjson.loads(acc.get_qifi())
+        assert resx['accounts']['balance'] == 20000198.72
+        assert resx['accounts']['pre_balance'] == 20000198.72
+        assert resx['accounts']['static_balance'] == 19999998.72
+        print(resx['accounts'])
+        {'user_id': 'test_acc', 'currency': 'CNY', 'pre_balance': 20000198.72, 'deposit': 0.0, 'withdraw': 0.0, 'WithdrawQuota': 19995998.72, 'close_profit': 0.0, 'commission': 0.0, 'premium': 0.0, 'static_balance': 19999998.72, 'position_profit': 0.0, 'float_profit': 200.0, 'balance': 20000198.72, 'margin': 4000.0, 'frozen_margin': 0.0, 'frozen_commission': 0.0, 'frozen_premium': 0.0, 'available': 19995998.72, 'risk_ratio': 0.00019999801281974465}
+        #print(res)
 
 
 
-    def test_acc_target_weight_when_marketvol_limit(self):
+        ###day2
+        #acc.buy_open("000001", 200,'2021-01-01', 20,)
+        acc.on_pricechange("000001.XSHE", 22, '2021-01-02')
+        res = orjson.loads(acc.get_qifi())
+        assert res['accounts']['balance'] == 20000398.72
+        assert res['accounts']['pre_balance'] == 20000198.72
+        assert res['accounts']['static_balance'] == 19999998.72
+        assert res['accounts']['static_balance'] + res['accounts']['float_profit'] + res['accounts']['close_profit'] - res['accounts']['commission'] == res['accounts']['pre_balance'] + res['accounts']['position_profit'] - res['accounts']['commission']
+        assert res['positions']['000001.XSHE']['position_price_long'] == 21.0
+        assert res['positions']['000001.XSHE']['open_price_long'] == 20.0
+        assert res['positions']['000001.XSHE']['position_cost_long'] == 4200.0
+        assert res['positions']['000001.XSHE']['float_profit'] == 400.0
+        assert res['positions']['000001.XSHE']['position_profit'] == 200.0
+        assert res['positions']['000001.XSHE']['margin'] == 4000.0
+        print(res['accounts'])
+        {'user_id': 'test_acc', 'currency': 'CNY', 'pre_balance': 20000198.72, 'deposit': 0.0, 'withdraw': 0.0, 'WithdrawQuota': 19995998.72, 'close_profit': 0.0, 'commission': 0.0, 'premium': 0.0, 'static_balance': 19999998.72, 'position_profit': 200.0, 'float_profit': 400.0, 'balance': 20000398.72, 'margin': 4000.0, 'frozen_margin': 0.0, 'frozen_commission': 0.0, 'frozen_premium': 0.0, 'available': 19995998.72, 'risk_ratio': 0.00019999801281974465}
+        acc.settle()
+        resx = orjson.loads(acc.get_qifi())
+        assert resx['accounts']['balance'] == 20000398.72
+        assert resx['accounts']['pre_balance'] == 20000398.72
+        assert resx['accounts']['static_balance'] == 19999998.72
+        print(resx['accounts'])
+        {'user_id': 'test_acc', 'currency': 'CNY', 'pre_balance': 20000398.72, 'deposit': 0.0, 'withdraw': 0.0, 'WithdrawQuota': 19995998.72, 'close_profit': 0.0, 'commission': 0.0, 'premium': 0.0, 'static_balance': 19999998.72, 'position_profit': 0.0, 'float_profit': 400.0, 'balance': 20000398.72, 'margin': 4000.0, 'frozen_margin': 0.0, 'frozen_commission': 0.0, 'frozen_premium': 0.0, 'available': 19995998.72, 'risk_ratio': 0.00019999601287948725}
 
-        self.market = qars.core.QAMarket('mytestportfolio', '/opt/cache/data/mktdata.pq')
-        self.market.init_market({'test_acc': 20000000000000})
 
-        self.market.set_date("2021-03-11")
-        self.market.before_trade()
-        self.market.target_weight({'test_acc': {'600408.XSHG': 0.8, '600010.XSHG': 0.2}}, 'open')
 
-        pos1 = orjson.loads(self.market.settle())['test_acc']['positions']
-        pos1_600408 = pos1['600408.XSHG']
-        pos1_600010 = pos1['600010.XSHG']
-        #order_book_id	date		limit_down	prev_close	close	open	total_turnover	volume	    low	  limit_up	high	num_trades
-        #600408.XSHG	2021-03-11	3.20	     3.37	    3.30	3.41	33971793.0	   10215643.0	3.27	3.54	3.42	1679.0
+        ####day3
+        acc.buy_open("000001.XSHE", 200, '2021-01-03',23)
+        acc.on_pricechange("000001.XSHE", 24, '2021-01-03')
+        res = orjson.loads(acc.get_qifi())
+        print(res['accounts'])
+        assert res['accounts']['balance'] == 20000997.248
+        assert res['accounts']['pre_balance'] == 20000398.72
+        assert res['accounts']['static_balance'] == 19999998.72
+        assert res['accounts']['static_balance'] + res['accounts']['float_profit'] + res['accounts']['close_profit'] - res['accounts']['commission'] == res['accounts']['pre_balance'] + res['accounts']['position_profit'] - res['accounts']['commission']
         
-									
-        assert pos1_600408['volume_long_today'] == math.floor(10215643*0.0025)*100
-        assert pos1_600010['volume_long_today'] == math.floor(2221940988.0*0.0025)*100
+        assert res['positions']['000001.XSHE']['position_price_long'] == 22.5
+        assert res['positions']['000001.XSHE']['open_price_long'] == 21.5
+        {'user_id': 'test_acc', 'currency': 'CNY', 'pre_balance': 20000398.72, 'deposit': 0.0, 'withdraw': 0.0, 'WithdrawQuota': 19995998.72, 'close_profit': 0.0, 'commission': 1.4720000000000002, 'premium': 0.0, 'static_balance': 19999998.72, 'position_profit': 600.0, 'float_profit': 1000.0, 'balance': 20000997.248, 'margin': 8600.0, 'frozen_margin': 0.0, 'frozen_commission': 0.0, 'frozen_premium': 0.0, 'available': 19991397.248, 'risk_ratio': 0.0004299914276908976}
+        acc.settle()
+        resx = orjson.loads(acc.get_qifi())
+        assert resx['accounts']['balance'] == 20000997.248
+        assert resx['accounts']['pre_balance'] == 20000997.248
+        assert resx['accounts']['static_balance'] ==  19999997.248
+        print(resx['accounts'])
+        {'user_id': 'test_acc', 'currency': 'CNY', 'pre_balance': 20000997.248, 'deposit': 0.0, 'withdraw': 0.0, 'WithdrawQuota': 19991397.248, 'close_profit': 0.0, 'commission': 0.0, 'premium': 0.0, 'static_balance': 19999997.248, 'position_profit': 0.0, 'float_profit': 1000.0, 'balance': 20000997.248, 'margin': 8600.0, 'frozen_margin': 0.0, 'frozen_commission': 0.0, 'frozen_premium': 0.0, 'available': 19991397.248, 'risk_ratio': 0.00042997856023703804}
+
+        #print(res['positions']['000001.XSHE'])
 
 
-    def test_acc_target_weight_when_marketprice_limitdown(self):
+        ####day4
 
-        self.market = qars.core.QAMarket('mytestportfolio', '/opt/cache/data/mktdata.pq')
-        self.market.init_market({'test_acc': 20000})
-        self.market.set_date("2021-03-11")
-        self.market.before_trade()
-        self.market.target_weight({'test_acc': {'600408.XSHG': 0.8, '600010.XSHG': 0.2}}, 'open')
+        acc.sell_close("000001.XSHE", 200, '2021-01-04', 25)
+        acc.on_pricechange("000001.XSHE", 26, '2021-01-04')
+        res = orjson.loads(acc.get_qifi())
+        print(res['accounts'])
 
-        pos1 = orjson.loads(self.market.settle())['test_acc']['positions']
-        print('test_acc_target_weight_when_marketprice_limitdown in 2021/3/11')
-        #print(pos1)
-        print(self.market.get_pos_value('test_acc'))
-        print(self.market.get_pos_weight('test_acc'))
-        assert pos1['600408.XSHG']['volume_long_today'] == 4600.0
-        self.market.set_date("2021-03-12")
-        self.market.before_trade()
-
-        self.market.target_weight({'test_acc': {'600408.XSHG':0, '600010.XSHG': 1}}, 'close')
-        pos2 = orjson.loads(self.market.settle())['test_acc']#['positions']
-        #print(pos2)
-        print('test_acc_target_weight_when_marketprice_limitdown in 2021/3/12')
-        print(self.market.get_pos_value('test_acc'))
-        print(self.market.get_pos_weight('test_acc'))
-        
-        print(pos2['trades'])
-        assert pos2['positions']['600408.XSHG']['volume_long_today'] == 0.0
-        ## never sell because 600408 close == limit down
-        assert pos2['positions']['600408.XSHG']['volume_long'] == 4600.0
-        ## frozen has never been release because of 600408 limit down
-        assert pos2['positions']['600010.XSHG']['volume_long_today'] == 200.0
-
-        self.market.set_date("2021-03-15")
-        self.market.before_trade()
-
-        self.market.target_weight({'test_acc': {'600408.XSHG':0, '600010.XSHG': 1}}, 'close')
-        pos3 = orjson.loads(self.market.settle())['test_acc']['positions']
-        #print(pos2)
-
-        assert pos3['600408.XSHG']['volume_long_today'] == -4600.0
-        ## never sell
-        assert pos3['600408.XSHG']['volume_long'] == 0.0
-        assert pos3['600010.XSHG']['volume_long_today'] == 7400.0
-        print('test_acc_target_weight_when_marketprice_limitdown in 2021/3/15')
-        print(self.market.get_pos_value('test_acc'))
-        print(self.market.get_pos_weight('test_acc'))
-
-    def test_acc_target_weight_when_one_code_limit_by_vol_and_notfree_cash(self):
-        self.market = qars.core.QAMarket('mytestportfolio', '/opt/cache/data/mktdata.pq')
-        self.market.init_market({'test_acc': 20000000})
-        self.market.set_date("2021-03-11")
-        self.market.before_trade()
-        self.market.target_weight({'test_acc': {'600408.XSHG': 0.7,'000001.XSHE': 0.1, '600010.XSHG': 0.1}}, 'open')
-        print(self.market.get_pos_value('test_acc'))
-        print(self.market.get_pos_weight('test_acc'))
-        trade = pd.DataFrame(orjson.loads(self.market.settle())['test_acc']['trades'])
-        print(trade)
-
-        print('\n\n\\2021-03-12\n\n')
-        self.market.set_date("2021-03-12")
-        self.market.before_trade()
-        self.market.target_weight({'test_acc': {'600408.XSHG': 0.7,'000001.XSHE': 0.1, '600010.XSHG': 0.1}}, 'open')
-        
-        trade = pd.DataFrame(orjson.loads(self.market.settle())['test_acc']['trades'])
-        print(trade)
-        hold = pd.DataFrame(orjson.loads(self.market.settle())['test_acc']['positions'].values())
-        print(hold)
-        print(self.market.get_pos_value('test_acc'))
-        print(self.market.get_pos_weight('test_acc'))
-        # 600010 volume 10752600.0
-        # 000001 volume 935800.0
-        # 600408 volume 4198800.0
- 
-        print('\n\n\\2021-03-15\n\n')
-        self.market.set_date("2021-03-15")
-        self.market.before_trade()
-        self.market.target_weight({'test_acc': {'600408.XSHG': 0.1,'000001.XSHE': 0.45, '600010.XSHG': 0.45}}, 'open')
-        
-
-        trade = pd.DataFrame(orjson.loads(self.market.settle())['test_acc']['trades'])
-        print(trade)
-        # 600010 volume 15557700.0
-        # 000001 volume  1240300.0
-        # 600408 volume 330500.0
-
-        hold = pd.DataFrame(orjson.loads(self.market.settle())['test_acc']['positions'].values())
-        print(hold)
-        print(self.market.get_pos_value('test_acc'))
-        print(self.market.get_pos_weight('test_acc'))
-
-        print('\n\n\\2021-03-16\n\n')
-        self.market.set_date("2021-03-16")
-        self.market.before_trade()
-        self.market.target_weight({'test_acc': {'600408.XSHG': 0,'000001.XSHE': 0.5, '600010.XSHG': 0.5}}, 'open')
-        
-        trade = pd.DataFrame(orjson.loads(self.market.settle())['test_acc']['trades'])
-        print(trade)
-        print(self.market.get_pos_value('test_acc'))
-        print(self.market.get_pos_weight('test_acc'))
+        assert res['accounts']['balance'] == 20001590.648
+        assert res['accounts']['pre_balance'] == 20000997.248
+        assert res['accounts']['static_balance'] == 19999997.248
+        assert res['accounts']['close_profit'] == 700.0
+        assert res['accounts']['position_profit'] == 600.0
+        assert res['accounts']['static_balance'] + res['accounts']['float_profit'] + res['accounts']['close_profit'] - res['accounts']['commission'] == res['accounts']['pre_balance'] + res['accounts']['position_profit'] - res['accounts']['commission']
+        {'user_id': 'test_acc', 'currency': 'CNY', 'pre_balance': 20001590.648, 'deposit': 0.0, 'withdraw': 0.0, 'WithdrawQuota': 19996390.648, 'close_profit': 0.0, 'commission': 0.0, 'premium': 0.0, 'static_balance': 20000690.648, 'position_profit': 200.0, 'float_profit': 900.0, 'balance': 20001590.648, 'margin': 4300.0, 'frozen_margin': 0.0, 'frozen_commission': 0.0, 'frozen_premium': 0.0, 'available': 19996390.648, 'risk_ratio': 0.00021498290189385345}
+        acc.settle()
+        resx = orjson.loads(acc.get_qifi())
+        print(resx['accounts'])
 
 
-    def test_position_profit(self):
-
-        self.market = qars.core.QAMarket('mytestportfolio', '/opt/cache/data/mktdata.pq')
-        self.market.init_market({'test_acc': 20000000})
-        self.market.set_date("2021-03-11")
-        self.market.before_trade()
-        self.market.target_weight({'test_acc': {'600408.XSHG': 0.7,'000001.XSHE': 0.1, '600010.XSHG': 0.1}}, 'open')
-
-        acc = pd.DataFrame(orjson.loads(self.market.settle())['test_acc'])
-        z = orjson.loads(self.market.get_daily_pos('test_acc'))
-        print(z)
-
+        {'user_id': 'test_acc', 'currency': 'CNY', 'pre_balance': 20001590.648, 'deposit': 0.0, 'withdraw': 0.0, 'WithdrawQuota': 19996390.648, 'close_profit': 0.0, 'commission': 0.0, 'premium': 0.0, 'static_balance': 20000690.648, 'position_profit': 0.0, 'float_profit': 900.0, 'balance': 20001590.648, 'margin': 4300.0, 'frozen_margin': 0.0, 'frozen_commission': 0.0, 'frozen_premium': 0.0, 'available': 19996390.648, 'risk_ratio': 0.00021498290189385345}
+        assert resx['accounts']['balance'] == 20001590.648
+        assert resx['accounts']['pre_balance'] == 20001590.648
+        assert resx['accounts']['static_balance'] == 20000690.648
+        assert resx['accounts']['close_profit'] == 0.0
+        assert resx['accounts']['static_balance'] + resx['accounts']['float_profit'] + resx['accounts']['close_profit'] - resx['accounts']['commission'] == resx['accounts']['pre_balance'] + resx['accounts']['position_profit'] - resx['accounts']['commission']
