@@ -14,12 +14,7 @@ use pyo3::prelude::*;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-//use crate::qamarket::order_book::OrderBook;
 
-/// realtime market with lots of account reg
-///
-///
-///
 use chrono::Local;
 use hashbrown::HashMap;
 

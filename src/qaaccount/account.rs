@@ -468,7 +468,7 @@ impl QA_Account {
     pub fn get_positionprofit(&mut self) -> f64 {
         let mut pp = 0.0;
         for pos in self.hold.values_mut() {
-            pp += pos.float_profit();
+            pp += pos.position_profit();
         }
         pp
     }
@@ -1093,8 +1093,8 @@ impl QA_Account {
         if self.hold.contains_key(&code) {
             let pos = self.get_position(code.as_ref()).unwrap();
             pos.on_price_change(price, datetime.clone());
-            self.change_datetime(datetime);
         }
+        self.change_datetime(datetime);
     }
 
     pub fn change_datetime(&mut self, datetime: String) {

@@ -250,6 +250,10 @@ impl QA_Postions {
         self.volume_short_his += self.volume_short_today + self.volume_short_frozen_today;
         self.volume_short_today = 0.0;
         self.volume_short_frozen_today = 0.0;
+        self.position_price_long = self.lastest_price;
+        self.position_price_short = self.lastest_price;
+        self.position_cost_long = self.position_price_long * self.volume_long();
+        self.position_cost_short = self.position_price_short * self.volume_short();
     }
 
     pub async fn settle_async(&mut self) {
@@ -383,11 +387,13 @@ impl QA_Postions {
         match towards {
             // 当日买入计入volume long frozen
             1 => {
-                // buy open logic
+                // buy logic
                 self.margin_long += margin_value;
                 self.open_price_long = (self.open_price_long * self.volume_long() + price * amount)
                     / (self.volume_long() + amount);
-                self.position_price_long = self.open_price_long;
+                self.position_price_long = (self.position_price_long * self.volume_long()
+                    + price * amount)
+                    / (self.volume_long() + amount);
                 self.volume_long_today += amount;
                 self.open_cost_long += temp_cost;
                 self.position_cost_long += temp_cost;
@@ -397,7 +403,9 @@ impl QA_Postions {
                 self.margin_long += margin_value;
                 self.open_price_long = (self.open_price_long * self.volume_long() + price * amount)
                     / (self.volume_long() + amount);
-                self.position_price_long = self.open_price_long;
+                self.position_price_long = (self.position_price_long * self.volume_long()
+                    + price * amount)
+                    / (self.volume_long() + amount);
                 self.volume_long_today += amount;
                 self.open_cost_long += temp_cost;
                 self.position_cost_long += temp_cost;
@@ -408,12 +416,15 @@ impl QA_Postions {
                 self.open_price_short = (self.open_price_short * self.volume_short()
                     + price * amount)
                     / (self.volume_short() + amount);
-                self.position_price_short = self.open_price_short;
+                self.position_price_short = (self.position_price_short * self.volume_short()
+                    + price * amount)
+                    / (self.volume_short() + amount);
                 self.volume_short_today += amount;
                 self.open_cost_short += temp_cost;
                 self.position_cost_short += temp_cost;
             }
             3 => {
+                // buyclose logic
                 //self.volume_short_today -= amount;
                 // 有昨仓先平昨仓
 
@@ -430,19 +441,18 @@ impl QA_Postions {
                 //self.preset.print();
 
                 margin_value = -1.0
-                    * (self.position_price_short
+                    * (self.open_price_short
                         * amount
                         * self.preset.sell_frozen_coeff
                         * self.preset.unit_table as f64);
 
                 //println!("BUY CLOSE XX MV{:#?}", margin_value);
 
-                profit =
-                    (self.position_price_short - price) * amount * self.preset.unit_table as f64;
+                profit = (self.open_price_short - price) * amount * self.preset.unit_table as f64;
                 self.margin_short += margin_value;
             }
             -1 => {
-                // sell open logic
+                // sell logic
                 if amount <= self.volume_long_his {
                     let volume_long = self.volume_long();
 
@@ -453,17 +463,18 @@ impl QA_Postions {
 
                     self.volume_long_frozen_today -= amount;
                     margin_value = -1.0
-                        * (self.position_price_long
+                        * (self.open_price_long
                             * amount
                             * self.preset.unit_table as f64
                             * self.preset.buy_frozen_coeff);
                     profit =
-                        (price - self.position_price_long) * amount * self.preset.unit_table as f64;
+                        (price - self.open_price_long) * amount * self.preset.unit_table as f64;
                     self.margin_long += margin_value;
                 } else {
                 }
             }
             -3 => {
+                // sell close logic
                 //self.volume_long_today -= amount;
 
                 let volume_long = self.volume_long();
@@ -473,12 +484,11 @@ impl QA_Postions {
 
                 self.volume_long_frozen_today -= amount;
                 margin_value = -1.0
-                    * (self.position_price_long
+                    * (self.open_price_long
                         * amount
                         * self.preset.unit_table as f64
                         * self.preset.buy_frozen_coeff);
-                profit =
-                    (price - self.position_price_long) * amount * self.preset.unit_table as f64;
+                profit = (price - self.open_price_long) * amount * self.preset.unit_table as f64;
                 self.margin_long += margin_value;
             }
             _ => {}

@@ -125,3 +125,17 @@ class TestAccount:
         print(trade)
         print(self.market.get_pos_value('test_acc'))
         print(self.market.get_pos_weight('test_acc'))
+
+
+    def test_position_profit(self):
+
+        self.market = qars.core.QAMarket('mytestportfolio', '/opt/cache/data/mktdata.pq')
+        self.market.init_market({'test_acc': 20000000})
+        self.market.set_date("2021-03-11")
+        self.market.before_trade()
+        self.market.target_weight({'test_acc': {'600408.XSHG': 0.7,'000001.XSHE': 0.1, '600010.XSHG': 0.1}}, 'open')
+
+        acc = pd.DataFrame(orjson.loads(self.market.settle())['test_acc'])
+        z = orjson.loads(self.market.get_daily_pos('test_acc'))
+        print(z)
+

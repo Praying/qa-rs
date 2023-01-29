@@ -3,7 +3,7 @@ use crate::qaaccount::portfolio::QA_Portfolio;
 use crate::qaanalysis::qifianalysis::QIFIAnalysis;
 use crate::qadata::marketcenter::{Kline, QAMarketCenter};
 use crate::qaenv::localenv::CONFIG;
-use crate::qaprotocol::qifi::account::QIFI;
+use crate::qaprotocol::qifi::account::{Position, QIFI};
 use crate::qautil::tradedate::{QATradeDate, QA_util_datelist_to_string};
 use hashbrown::HashMap;
 use polars::prelude::*;
@@ -263,22 +263,6 @@ impl QAMarket {
             acc.settle()
         }
     }
-
-    // pub fn target_weight(
-    //     &mut self,
-    //     account_name: &str,
-    //     targetpanel: HashMap<String, f64>,
-    //     model: &str,
-    // ) {
-    //     if self.reg_account.contains_key(account_name) {
-    //         let acc = self.get_account(account_name);
-    //         match model {
-    //             "twap_30" => {
-    //                 let datacolumn = self.data.data.select(["order_book_id", "twap_30"]);
-    //             }
-    //         }
-    //     }
-    // }
 }
 
 pub trait QAStrategy {
@@ -553,6 +537,66 @@ impl QAMarket {
     pub fn py_get_pos_weight(&mut self, account_name: &str) -> PyResult<HashMap<String, f64>> {
         if self.reg_account.contains_key(account_name) {
             Ok(self.get_account(account_name).get_account_pos_weight())
+        } else {
+            Err(PyErr::new::<PyTypeError, _>("Error message"))
+        }
+    }
+
+    #[pyo3(name = "get_daily_pos")]
+    pub fn py_get_daily_pos(&mut self, account_name: &str) -> PyResult<String> {
+        if self.reg_account.contains_key(account_name) {
+            let tradeanalysis = QIFIAnalysis::new(
+                account_name.to_string(),
+                self.cache.get(account_name).unwrap().clone(),
+            );
+            let tradepair = tradeanalysis.get_daily_holding();
+
+            Ok(serde_json::to_string(&tradepair).unwrap())
+        } else {
+            Err(PyErr::new::<PyTypeError, _>("Error message"))
+        }
+    }
+
+    #[pyo3(name = "get_daily_trade")]
+    pub fn py_get_daily_trade(&mut self, account_name: &str) -> PyResult<String> {
+        if self.reg_account.contains_key(account_name) {
+            let tradeanalysis = QIFIAnalysis::new(
+                account_name.to_string(),
+                self.cache.get(account_name).unwrap().clone(),
+            );
+            let tradepair = tradeanalysis.get_daily_trade();
+
+            Ok(serde_json::to_string(&tradepair).unwrap())
+        } else {
+            Err(PyErr::new::<PyTypeError, _>("Error message"))
+        }
+    }
+
+    #[pyo3(name = "get_daily_order")]
+    pub fn py_get_daily_order(&mut self, account_name: &str) -> PyResult<String> {
+        if self.reg_account.contains_key(account_name) {
+            let tradeanalysis = QIFIAnalysis::new(
+                account_name.to_string(),
+                self.cache.get(account_name).unwrap().clone(),
+            );
+            let tradepair = tradeanalysis.get_daily_order();
+
+            Ok(serde_json::to_string(&tradepair).unwrap())
+        } else {
+            Err(PyErr::new::<PyTypeError, _>("Error message"))
+        }
+    }
+
+    #[pyo3(name = "get_daily_account")]
+    pub fn py_get_daily_account(&mut self, account_name: &str) -> PyResult<String> {
+        if self.reg_account.contains_key(account_name) {
+            let tradeanalysis = QIFIAnalysis::new(
+                account_name.to_string(),
+                self.cache.get(account_name).unwrap().clone(),
+            );
+            let tradepair = tradeanalysis.get_daily_account();
+
+            Ok(serde_json::to_string(&tradepair).unwrap())
         } else {
             Err(PyErr::new::<PyTypeError, _>("Error message"))
         }

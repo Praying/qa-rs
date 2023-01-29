@@ -30,6 +30,40 @@ pub struct Account {
     pub available: f64,
     pub risk_ratio: f64,
 }
+impl Account {
+    pub fn to_mini(&self, date: String) -> MiniAccount {
+        MiniAccount {
+            user_id: self.user_id.clone(),
+            balance: self.balance,
+            available: self.available,
+            risk_ratio: self.risk_ratio,
+            position_profit: self.position_profit,
+            float_profit: self.float_profit,
+            commission: self.commission,
+            margin: self.margin,
+            frozen_margin: self.frozen_margin,
+            deposit: self.deposit,
+            withdraw: self.withdraw,
+            date: date,
+        }
+    }
+}
+
+#[derive(Serialize, Clone, Deserialize, Debug, Default)]
+pub struct MiniAccount {
+    pub user_id: String,
+    pub balance: f64,
+    pub available: f64,
+    pub risk_ratio: f64,
+    pub position_profit: f64,
+    pub float_profit: f64,
+    pub commission: f64,
+    pub margin: f64,
+    pub frozen_margin: f64,
+    pub deposit: f64,
+    pub withdraw: f64,
+    pub date: String,
+}
 
 #[allow(dead_code)]
 #[derive(Serialize, Clone, Deserialize, Debug, Default)]
@@ -121,6 +155,66 @@ pub struct Position {
     pub position_profit_long: f64,
     pub position_profit_short: f64,
     pub position_profit: f64,
+    pub margin_long: f64,
+    pub margin_short: f64,
+    pub margin: f64,
+}
+impl Position {
+    pub fn to_mini(self, date: String) -> MiniPosition {
+        MiniPosition {
+            user_id: self.user_id,
+            exchange_id: self.exchange_id,
+            instrument_id: self.instrument_id,
+            trading_day: date,
+            volume_long: self.volume_long,
+            volume_long_today: self.volume_long_today,
+            volume_long_his: self.volume_long_his,
+            volume_short: self.volume_short,
+            volume_short_today: self.volume_short_today,
+            volume_short_his: self.volume_short_his,
+            float_profit_long: self.float_profit_long,
+            float_profit_short: self.float_profit_short,
+            float_profit: self.float_profit,
+            open_price_long: self.open_price_long,
+            open_price_short: self.open_price_short,
+            open_cost_long: self.open_cost_long,
+            open_cost_short: self.open_cost_short,
+            position_cost_long: self.position_cost_long,
+            position_cost_short: self.position_cost_short,
+            position_price_long: self.position_price_long,
+            position_price_short: self.position_price_short,
+            last_price: self.last_price,
+            margin_long: self.margin_long,
+            margin_short: self.margin_short,
+            margin: self.margin,
+        }
+    }
+}
+
+#[derive(Serialize, Clone, Deserialize, Debug, Default)]
+pub struct MiniPosition {
+    pub user_id: String,
+    pub exchange_id: String,
+    pub instrument_id: String,
+    pub trading_day: String,
+    pub volume_long: f64,
+    pub volume_long_today: f64,
+    pub volume_long_his: f64,
+    pub volume_short: f64,
+    pub volume_short_today: f64,
+    pub volume_short_his: f64,
+    pub float_profit_long: f64,
+    pub float_profit_short: f64,
+    pub float_profit: f64,
+    pub open_price_long: f64,
+    pub open_price_short: f64,
+    pub open_cost_long: f64,
+    pub open_cost_short: f64,
+    pub position_cost_long: f64,
+    pub position_cost_short: f64,
+    pub position_price_long: f64,
+    pub position_price_short: f64,
+    pub last_price: f64,
     pub margin_long: f64,
     pub margin_short: f64,
     pub margin: f64,

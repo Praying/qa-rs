@@ -1,6 +1,9 @@
 use crate::qaaccount::qaperformance::{QAPerformance, QATradePair};
-use crate::qaprotocol::qifi::account::QIFI;
+use crate::qaprotocol::qifi::account::{Account, MiniAccount, MiniPosition, Order, Trade, QIFI};
+use hashbrown::HashMap;
 use polars::prelude::*;
+use rayon::prelude::*;
+use std::collections::BTreeMap;
 pub struct QIFIAnalysis {
     pub account_cookie: String,
     pub qifi_history: Vec<QIFI>,
@@ -39,5 +42,50 @@ impl QIFIAnalysis {
             });
         });
         perf.pair()
+    }
+
+    pub fn get_daily_holding(&self) -> Vec<MiniPosition> {
+        // daily holding
+        let mut holding = Vec::new();
+
+        self.qifi_history.iter().for_each(|qifi| {
+            let date = qifi.trading_day.clone();
+            qifi.positions.iter().for_each(|(_, value)| {
+                holding.push(value.clone().to_mini(date.clone()));
+            });
+        });
+        holding
+    }
+
+    pub fn get_daily_account(&self) -> Vec<MiniAccount> {
+        // daily account
+        let mut account = Vec::new();
+        self.qifi_history.iter().for_each(|qifi| {
+            let date = qifi.trading_day.clone();
+            account.push(qifi.accounts.clone().to_mini(date.clone()));
+        });
+        account
+    }
+
+    pub fn get_daily_order(&self) -> Vec<Order> {
+        // daily order
+        let mut order = Vec::new();
+        self.qifi_history.iter().for_each(|qifi| {
+            qifi.orders.iter().for_each(|(_, value)| {
+                order.push(value.clone());
+            });
+        });
+        order
+    }
+
+    pub fn get_daily_trade(&self) -> Vec<Trade> {
+        // daily trade
+        let mut trade = Vec::new();
+        self.qifi_history.iter().for_each(|qifi| {
+            qifi.trades.iter().for_each(|(_, value)| {
+                trade.push(value.clone());
+            });
+        });
+        trade
     }
 }
