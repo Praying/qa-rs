@@ -92,41 +92,80 @@ impl QAMarket {
     pub fn settle(&mut self, slice: &HashMap<String, Kline>) {
         //market settle event
         let datetime = self.today.clone();
-        for acc in self.reg_account.values_mut() {
+
+        self.reg_account.par_iter_mut().for_each(|(_, acc)| {
             for code in acc.get_code_subscribed() {
                 let kline = slice.get(&code).unwrap();
                 let price = kline.close;
                 acc.on_price_change(code, price, datetime.clone());
             }
             acc.settle();
-        }
+        });
+        // for acc in self.reg_account.values_mut() {
+        //     for code in acc.get_code_subscribed() {
+        //         let kline = slice.get(&code).unwrap();
+        //         let price = kline.close;
+        //         acc.on_price_change(code, price, datetime.clone());
+        //     }
+        //     acc.settle();
+        // }
     }
 
     pub fn before_trade(&mut self, slice: &HashMap<String, Kline>) {
         // check holding
         // from settle table
-
-        for acc in self.reg_account.values_mut() {
+        self.reg_account.par_iter_mut().for_each(|(_, acc)| {
             for code in acc.get_code_subscribed() {
-                let kline = slice.get(&code).unwrap();
-                if kline.dividend_cash_before_tax != 0.0 {
-                    println!(
-                        "[qamarket event] dividend_cash {} {}",
-                        code, kline.dividend_cash_before_tax
-                    );
-                    acc.dividend_event(&code, kline.dividend_cash_before_tax);
+                
+                let kline = slice.get(&code);
+                if kline.is_none() {
+                    println!("can not find kline for {} {}", code, self.today);
+                    continue;
+                }else{
+                    let kline = kline.unwrap();
+                    if kline.dividend_cash_before_tax != 0.0 {
+                        // println!(
+                        //     "[qamarket event] dividend_cash {} {}",
+                        //     code, kline.dividend_cash_before_tax
+                        // );
+                        acc.dividend_event(&code, kline.dividend_cash_before_tax);
+                    }
+                    if kline.split_coefficient_to != 0.0 {
+                        // println!(
+                        //     "[qamarket event] split {} {}",
+                        //     code, kline.split_coefficient_to
+                        // );
+                        acc.split_event(&code, kline.split_coefficient_to);
+                    }
+                    let price = kline.open;
+                    acc.on_price_change(code, price, self.today.clone());
                 }
-                if kline.split_coefficient_to != 0.0 {
-                    println!(
-                        "[qamarket event] split {} {}",
-                        code, kline.split_coefficient_to
-                    );
-                    acc.split_event(&code, kline.split_coefficient_to);
-                }
-                let price = kline.open;
-                acc.on_price_change(code, price, self.today.clone());
+                
             }
-        }
+        });
+
+
+        // for acc in self.reg_account.values_mut() {
+        //     for code in acc.get_code_subscribed() {
+        //         let kline = slice.get(&code).unwrap();
+        //         if kline.dividend_cash_before_tax != 0.0 {
+        //             // println!(
+        //             //     "[qamarket event] dividend_cash {} {}",
+        //             //     code, kline.dividend_cash_before_tax
+        //             // );
+        //             acc.dividend_event(&code, kline.dividend_cash_before_tax);
+        //         }
+        //         if kline.split_coefficient_to != 0.0 {
+        //             // println!(
+        //             //     "[qamarket event] split {} {}",
+        //             //     code, kline.split_coefficient_to
+        //             // );
+        //             acc.split_event(&code, kline.split_coefficient_to);
+        //         }
+        //         let price = kline.open;
+        //         acc.on_price_change(code, price, self.today.clone());
+        //     }
+        // }
         while self.schedule_queue.size() > 0 {
             let (eventname, accountname, target, model) = self.schedule_queue.remove().unwrap();
             // println!(
@@ -251,7 +290,7 @@ impl QAMarket {
         //on bar
         self.on_bar(&slice);
 
-        for acc in self.reg_account.values_mut() {
+        self.reg_account.par_iter_mut().for_each(|(_, acc)| {
             for code in acc.get_code_subscribed() {
                 acc.on_price_change(
                     code.clone(),
@@ -261,7 +300,20 @@ impl QAMarket {
             }
 
             acc.settle()
-        }
+        });
+
+
+        // for acc in self.reg_account.values_mut() {
+        //     for code in acc.get_code_subscribed() {
+        //         acc.on_price_change(
+        //             code.clone(),
+        //             slice.get(&code).unwrap().close,
+        //             self.today.clone(),
+        //         )
+        //     }
+
+        //     acc.settle()
+        // }
     }
 }
 
@@ -434,11 +486,19 @@ impl QAMarket {
         let mut result = HashMap::new();
         for acc in self.reg_account.values_mut() {
             for code in acc.get_code_subscribed() {
-                acc.on_price_change(
-                    code.clone(),
-                    slice.get(&code).unwrap().close,
-                    self.today.clone(),
-                )
+
+                let codex = slice.get(&code);
+                if codex.is_none() {
+                    continue;
+                }else{
+                    acc.on_price_change(
+                        code.clone(),
+                        codex.unwrap().close,
+                        self.today.clone(),
+                    )
+                }
+
+                
             }
             let qifi_slice = acc.get_qifi_slice();
             let cache_acc = self.cache.get_mut(&qifi_slice.account_cookie).unwrap();
@@ -453,6 +513,7 @@ impl QAMarket {
         let cache_port = self.cache.get_mut(&self.portfolio_name).unwrap();
         cache_port.push(portqifi.clone());
         result.insert(self.portfolio_name.clone(), portqifi);
+
 
         let v = serde_json::to_string(&result).unwrap();
         Ok(v)
@@ -504,7 +565,7 @@ impl QAMarket {
 
     #[pyo3(name = "get_tradepair")]
     pub fn py_get_tradepair(&mut self, account_name: &str) -> PyResult<String> {
-        if self.reg_account.contains_key(account_name) {
+        if self.cache.contains_key(account_name) {
             let tradeanalysis = QIFIAnalysis::new(
                 account_name.to_string(),
                 self.cache.get(account_name).unwrap().clone(),
@@ -526,7 +587,7 @@ impl QAMarket {
 
     #[pyo3(name = "get_pos_value")]
     pub fn py_get_pos_value(&mut self, account_name: &str) -> PyResult<HashMap<String, f64>> {
-        if self.reg_account.contains_key(account_name) {
+        if self.cache.contains_key(account_name) {
             Ok(self.get_account(account_name).get_account_pos_value())
         } else {
             Err(PyErr::new::<PyTypeError, _>("Error message"))
@@ -535,7 +596,7 @@ impl QAMarket {
 
     #[pyo3(name = "get_pos_weight")]
     pub fn py_get_pos_weight(&mut self, account_name: &str) -> PyResult<HashMap<String, f64>> {
-        if self.reg_account.contains_key(account_name) {
+        if self.cache.contains_key(account_name) {
             Ok(self.get_account(account_name).get_account_pos_weight())
         } else {
             Err(PyErr::new::<PyTypeError, _>("Error message"))
@@ -544,7 +605,7 @@ impl QAMarket {
 
     #[pyo3(name = "get_daily_pos")]
     pub fn py_get_daily_pos(&mut self, account_name: &str) -> PyResult<String> {
-        if self.reg_account.contains_key(account_name) {
+        if self.cache.contains_key(account_name) {
             let tradeanalysis = QIFIAnalysis::new(
                 account_name.to_string(),
                 self.cache.get(account_name).unwrap().clone(),
@@ -559,7 +620,7 @@ impl QAMarket {
 
     #[pyo3(name = "get_daily_trade")]
     pub fn py_get_daily_trade(&mut self, account_name: &str) -> PyResult<String> {
-        if self.reg_account.contains_key(account_name) {
+        if self.cache.contains_key(account_name) {
             let tradeanalysis = QIFIAnalysis::new(
                 account_name.to_string(),
                 self.cache.get(account_name).unwrap().clone(),
@@ -574,7 +635,7 @@ impl QAMarket {
 
     #[pyo3(name = "get_daily_order")]
     pub fn py_get_daily_order(&mut self, account_name: &str) -> PyResult<String> {
-        if self.reg_account.contains_key(account_name) {
+        if self.cache.contains_key(account_name) {
             let tradeanalysis = QIFIAnalysis::new(
                 account_name.to_string(),
                 self.cache.get(account_name).unwrap().clone(),
@@ -589,7 +650,7 @@ impl QAMarket {
 
     #[pyo3(name = "get_daily_account")]
     pub fn py_get_daily_account(&mut self, account_name: &str) -> PyResult<String> {
-        if self.reg_account.contains_key(account_name) {
+        if self.cache.contains_key(account_name) {
             let tradeanalysis = QIFIAnalysis::new(
                 account_name.to_string(),
                 self.cache.get(account_name).unwrap().clone(),
@@ -601,4 +662,21 @@ impl QAMarket {
             Err(PyErr::new::<PyTypeError, _>("Error message"))
         }
     }
+
+    // #[pyo3(name = "get_daily_compare")]
+    // pub fn py_get_compare(&mut self, account_name: Vec<&str>) -> PyResult<String> {
+    //     if self.reg_account.contains_key(account_name) {
+    //         let tradeanalysis = QIFIAnalysis::new(
+    //             account_name.to_string(),
+    //             self.cache.get(account_name).unwrap().clone(),
+    //         );
+    //         let tradepair = tradeanalysis.get_daily_account();
+
+    //         Ok(serde_json::to_string(&tradepair).unwrap())
+    //     } else {
+    //         Err(PyErr::new::<PyTypeError, _>("Error message"))
+    //     }
+    // }
+
+
 }

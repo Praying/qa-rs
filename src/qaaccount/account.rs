@@ -1405,67 +1405,115 @@ impl QA_Account {
                 if target_panel.contains_key(code) {
                 } else {
                     //let pos = self.hold.get(code).unwrap();
-                    let current_data = slice.get(code).unwrap();
-
-                    let price = match label {
-                        "close" => current_data.close,
-
-                        "open" => current_data.open,
-                        _ => {
-                            println!("label error, use openprice");
-                            current_data.close
+                    let current_data = slice.get(code);
+                    // sell close logic
+                    
+                    if current_data.is_none(){
+                        // 如果股票退市/转股  如： 600068 葛洲坝 2021-09-13 转股中国能建A, 我们允许他以前一个收盘日价格卖出
+                        // 此时已经无法从市场获取该票的价格, 因此采用lastprice + 无限制的volume
+                        if pos.volume_long_his > 0.0 {
+                            s.send((
+                                code.to_owned(),
+                                pos.lastest_price,
+                                pos.volume_long_his,
+                                "sell_close",
+                                0.0,
+                                1000000000000.0,
+                            ));
                         }
-                    };
-
-                    let volume_market_limit = match adjust_market(code).as_ref() {
-                        "stock_cn" => 100.0 * (current_data.volume * 0.0025).floor() as f64,
-                        "future_cn" => (current_data.volume * 0.25).floor() as f64,
-                        _ => {
-                            println!("market error, use 100");
-                            100.0
+                        if pos.volume_long_today > 0.0 {
+                            s.send((
+                                code.to_owned(),
+                                pos.lastest_price,
+                                pos.volume_long_today,
+                                "sell_closetoday",
+                                0.0,
+                                1000000000000.0,
+                            ));
                         }
-                    };
-
-                    if pos.volume_long_his > 0.0 {
-                        s.send((
-                            code.to_owned(),
-                            price,
-                            pos.volume_long_his,
-                            "sell_close",
-                            current_data.limit_down,
-                            volume_market_limit,
-                        ));
+                        if pos.volume_short_his > 0.0 {
+                            s.send((
+                                code.to_owned(),
+                                pos.lastest_price,
+                                pos.volume_short_his,
+                                "buy_close",
+                                100000000.0,
+                                1000000000000.0,
+                            ));
+                        }
+                        if pos.volume_short_today > 0.0 {
+                            s.send((
+                                code.to_owned(),
+                                pos.lastest_price,
+                                pos.volume_short_today,
+                                "buy_closetoday",
+                                100000000.0,
+                                1000000000000.0,
+                            ));
+                        }
+                    }else{
+                        let current_data = current_data.unwrap();
+                        let price = match label {
+                            "close" => current_data.close,
+    
+                            "open" => current_data.open,
+                            _ => {
+                                println!("label error, use openprice");
+                                current_data.close
+                            }
+                        };
+    
+                        let volume_market_limit = match adjust_market(code).as_ref() {
+                            "stock_cn" => 100.0 * (current_data.volume * 0.0025).floor() as f64,
+                            "future_cn" => (current_data.volume * 0.25).floor() as f64,
+                            _ => {
+                                println!("market error, use 100");
+                                100.0
+                            }
+                        };
+    
+                        if pos.volume_long_his > 0.0 {
+                            s.send((
+                                code.to_owned(),
+                                price,
+                                pos.volume_long_his,
+                                "sell_close",
+                                current_data.limit_down,
+                                volume_market_limit,
+                            ));
+                        }
+                        if pos.volume_long_today > 0.0 {
+                            s.send((
+                                code.to_owned(),
+                                price,
+                                pos.volume_long_today,
+                                "sell_closetoday",
+                                current_data.limit_down,
+                                volume_market_limit,
+                            ));
+                        }
+                        if pos.volume_short_his > 0.0 {
+                            s.send((
+                                code.to_owned(),
+                                price,
+                                pos.volume_short_his,
+                                "buy_close",
+                                current_data.limit_up,
+                                volume_market_limit,
+                            ));
+                        }
+                        if pos.volume_short_today > 0.0 {
+                            s.send((
+                                code.to_owned(),
+                                price,
+                                pos.volume_short_today,
+                                "buy_closetoday",
+                                current_data.limit_up,
+                                volume_market_limit,
+                            ));
+                        }
                     }
-                    if pos.volume_long_today > 0.0 {
-                        s.send((
-                            code.to_owned(),
-                            price,
-                            pos.volume_long_today,
-                            "sell_closetoday",
-                            current_data.limit_down,
-                            volume_market_limit,
-                        ));
-                    }
-                    if pos.volume_short_his > 0.0 {
-                        s.send((
-                            code.to_owned(),
-                            price,
-                            pos.volume_short_his,
-                            "buy_close",
-                            current_data.limit_up,
-                            volume_market_limit,
-                        ));
-                    }
-                    if pos.volume_short_today > 0.0 {
-                        s.send((
-                            code.to_owned(),
-                            price,
-                            pos.volume_short_today,
-                            "buy_closetoday",
-                            current_data.limit_up,
-                            volume_market_limit,
-                        ));
-                    }
+                    
                 }
             });
 
@@ -1655,15 +1703,15 @@ impl QA_Account {
                     //"sell_open"=>self.acc.sell_open(order.0,order.1,order.2),
                     &"buy_close" => {
                         if price >= limit {
-                            println!(
-                                "errorlog:{:#?} buyclose  highlimit {:#?}/{:#?}/{:#?}/{:#?}/{:#?}/",
-                                today.clone(),
-                                code,    //code
-                                price,   //price
-                                amount,  //amount
-                                *action, //order_type
-                                limit    //limit
-                            );
+                            // println!(
+                            //     "errorlog:{:#?} buyclose  highlimit {:#?}/{:#?}/{:#?}/{:#?}/{:#?}/",
+                            //     today.clone(),
+                            //     code,    //code
+                            //     price,   //price
+                            //     amount,  //amount
+                            //     *action, //order_type
+                            //     limit    //limit
+                            // );
                         } else {
                             let amount_adj = amount.min(*market_vol_limit);
                             self.buy_close(code, amount_adj, &today.clone(), *price);
@@ -1671,15 +1719,15 @@ impl QA_Account {
                     }
                     &"sell_close" => {
                         if price <= limit {
-                            println!(
-                                "errorlog:{:#?} sellclose  lowlimit {:#?}/{:#?}/{:#?}/{:#?}/{:#?}/",
-                                today.clone(),
-                                code,    //code
-                                price,   //price
-                                amount,  //amount
-                                *action, //order_type
-                                limit
-                            );
+                            // println!(
+                            //     "errorlog:{:#?} sellclose  lowlimit {:#?}/{:#?}/{:#?}/{:#?}/{:#?}/",
+                            //     today.clone(),
+                            //     code,    //code
+                            //     price,   //price
+                            //     amount,  //amount
+                            //     *action, //order_type
+                            //     limit
+                            // );
                         } else {
                             let amount_adj = amount.min(*market_vol_limit);
                             self.sell_close(code, amount_adj, &today.clone(), *price);
@@ -2017,15 +2065,15 @@ impl QA_Account {
                     //"sell_open"=>self.acc.sell_open(order.0,order.1,order.2),
                     &"sell_open" => {
                         if price <= limit {
-                            println!(
-                                "errorlog:{:#?} sell_open  lowlimit {:#?}/{:#?}/{:#?}/{:#?}/{:#?}/",
-                                today.clone(),
-                                code,    //code
-                                price,   //price
-                                amount,  //amount
-                                *action, //order_type
-                                limit    //limit
-                            );
+                            //println!(
+                            //     "errorlog:{:#?} sell_open  lowlimit {:#?}/{:#?}/{:#?}/{:#?}/{:#?}/",
+                            //     today.clone(),
+                            //     code,    //code
+                            //     price,   //price
+                            //     amount,  //amount
+                            //     *action, //order_type
+                            //     limit    //limit
+                            // );
                         } else {
                             let amount_adj = amount.min(*market_vol_limit);
                             self.sell_open(code, amount_adj, &today.clone(), *price);
@@ -2033,15 +2081,15 @@ impl QA_Account {
                     }
                     &"buy_open" => {
                         if price >= limit {
-                            println!(
-                                "errorlog:{:#?} buy_open  highlimit {:#?}/{:#?}/{:#?}/{:#?}/{:#?}/",
-                                today.clone(),
-                                code,    //code
-                                price,   //price
-                                amount,  //amount
-                                *action, //order_type
-                                limit
-                            );
+                            // println!(
+                            //     "errorlog:{:#?} buy_open  highlimit {:#?}/{:#?}/{:#?}/{:#?}/{:#?}/",
+                            //     today.clone(),
+                            //     code,    //code
+                            //     price,   //price
+                            //     amount,  //amount
+                            //     *action, //order_type
+                            //     limit
+                            // );
                         } else {
                             let amount_adj = amount.min(*market_vol_limit);
                             self.buy_open(code, amount_adj, &today.clone(), *price);
@@ -2318,15 +2366,15 @@ impl QA_Account {
                     //"sell_open"=>self.acc.sell_open(order.0,order.1,order.2),
                     &"buy_close" => {
                         if price >= limit {
-                            println!(
-                                "errorlog:{:#?} buyclose  highlimit {:#?}/{:#?}/{:#?}/{:#?}/{:#?}/",
-                                today.clone(),
-                                code,    //code
-                                price,   //price
-                                amount,  //amount
-                                *action, //order_type
-                                limit    //limit
-                            );
+                            // println!(
+                            //     "errorlog:{:#?} buyclose  highlimit {:#?}/{:#?}/{:#?}/{:#?}/{:#?}/",
+                            //     today.clone(),
+                            //     code,    //code
+                            //     price,   //price
+                            //     amount,  //amount
+                            //     *action, //order_type
+                            //     limit    //limit
+                            // );
                         } else {
                             let amount_adj = amount.min(*market_vol_limit);
                             self.buy_close(code, amount_adj, &today.clone(), *price);
@@ -2334,15 +2382,15 @@ impl QA_Account {
                     }
                     &"sell_close" => {
                         if price <= limit {
-                            println!(
-                                "errorlog:{:#?} sellclose  lowlimit {:#?}/{:#?}/{:#?}/{:#?}/{:#?}/",
-                                today.clone(),
-                                code,    //code
-                                price,   //price
-                                amount,  //amount
-                                *action, //order_type
-                                limit
-                            );
+                            // println!(
+                            //     "errorlog:{:#?} sellclose  lowlimit {:#?}/{:#?}/{:#?}/{:#?}/{:#?}/",
+                            //     today.clone(),
+                            //     code,    //code
+                            //     price,   //price
+                            //     amount,  //amount
+                            //     *action, //order_type
+                            //     limit
+                            // );
                         } else {
                             let amount_adj = amount.min(*market_vol_limit);
                             self.sell_close(code, amount_adj, &today.clone(), *price);
@@ -2366,15 +2414,15 @@ impl QA_Account {
                     //"sell_open"=>self.acc.sell_open(order.0,order.1,order.2),
                     &"sell_open" => {
                         if price <= limit {
-                            println!(
-                                "errorlog:{:#?} sell_open  lowlimit {:#?}/{:#?}/{:#?}/{:#?}/{:#?}/",
-                                today.clone(),
-                                code,    //code
-                                price,   //price
-                                amount,  //amount
-                                *action, //order_type
-                                limit    //limit
-                            );
+                            // println!(
+                            //     "errorlog:{:#?} sell_open  lowlimit {:#?}/{:#?}/{:#?}/{:#?}/{:#?}/",
+                            //     today.clone(),
+                            //     code,    //code
+                            //     price,   //price
+                            //     amount,  //amount
+                            //     *action, //order_type
+                            //     limit    //limit
+                            // );
                         } else {
                             let amount_adj = amount.min(*market_vol_limit);
                             self.sell_open(code, amount_adj, &today.clone(), *price);
@@ -2382,15 +2430,15 @@ impl QA_Account {
                     }
                     &"buy_open" => {
                         if price >= limit {
-                            println!(
-                                "errorlog:{:#?} buy_open  highlimit {:#?}/{:#?}/{:#?}/{:#?}/{:#?}/",
-                                today.clone(),
-                                code,    //code
-                                price,   //price
-                                amount,  //amount
-                                *action, //order_type
-                                limit
-                            );
+                            // println!(
+                            //     "errorlog:{:#?} buy_open  highlimit {:#?}/{:#?}/{:#?}/{:#?}/{:#?}/",
+                            //     today.clone(),
+                            //     code,    //code
+                            //     price,   //price
+                            //     amount,  //amount
+                            //     *action, //order_type
+                            //     limit
+                            // );
                         } else {
                             let amount_adj = amount.min(*market_vol_limit);
                             self.buy_open(code, amount_adj, &today.clone(), *price);
