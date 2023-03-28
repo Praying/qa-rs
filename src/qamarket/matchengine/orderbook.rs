@@ -498,7 +498,7 @@ where
                     direction: opposite_order.direction,
                     price: opposite_order.price,
                     volume: opposite_order.volume - volume,
-                });
+                }, volume);
             }
         } else if volume > opposite_order.volume {
             // partially fill new limit order, fill opposite limit and notify to process the rest
@@ -576,7 +576,7 @@ where
 mod test {
 
     use crate::qaaccount::order;
-
+    use std::time::Instant; // timer
     use super::super::orders;
     use super::*;
 
@@ -605,8 +605,8 @@ mod test {
         let request = orders::new_limit_order_request(
             Asset::YUT,
             OrderDirection::BUY,
-            1.0,
-            1.0,
+            1.1,
+            300.0,
             2000000000000,
         );
         let mut result = orderbook.process_order(request);
@@ -614,7 +614,7 @@ mod test {
             Asset::YUT,
             OrderDirection::SELL,
             1.2,
-            1.0,
+            24.0,
             2000000000000,
         );
         let mut result = orderbook.process_order(request);
@@ -622,26 +622,30 @@ mod test {
             Asset::YUT,
             OrderDirection::SELL,
             1.3,
-            1.0,
+            122.0,
             2000000000000,
         );
         let mut result = orderbook.process_order(request);
+        let request = orders::new_limit_order_request(
+            Asset::YUT,
+            OrderDirection::BUY,
+            1.1,
+            300.0,
+            2000000000000,
+        );
+        
+        let mut result = orderbook.process_order(request);
+        println!("result: {:?}", result);
         let request = orders::new_limit_order_request(
             Asset::YUT,
             OrderDirection::SELL,
             1.1,
-            1.0,
+            380.0,
             2000000000000,
         );
+
         let mut result = orderbook.process_order(request);
-        let request = orders::new_limit_order_request(
-            Asset::YUT,
-            OrderDirection::SELL,
-            1.3,
-            1.0,
-            2000000000000,
-        );
-        let mut result = orderbook.process_order(request);
+        
         let request = orders::new_limit_order_request(
             Asset::YUT,
             OrderDirection::SELL,
@@ -666,46 +670,50 @@ mod test {
             2200000000000,
         );
         let mut result = orderbook.process_order(request);
-        let request = orders::new_limit_order_request(
-            Asset::YUT,
-            OrderDirection::SELL,
-            1.25,
-            1.0,
-            2000000000000,
-        );
 
-        let mut result = orderbook.process_order(request);
-        let request = orders::new_limit_order_request(
-            Asset::YUT,
-            OrderDirection::SELL,
-            1.36,
-            1.0,
-            2000000000000,
-        );
-
-        let mut result = orderbook.process_order(request);
-        let request =
-            orders::new_market_order_request(Asset::YUT, OrderDirection::BUY, 2.0, 2400000000000);
-        let mut result = orderbook.process_order(request);
-
-        let request =
-            orders::new_limit_order_request(Asset::YUT, OrderDirection::BUY, 1.08,2.0, 2300000000000);
-        let mut result = orderbook.process_order(request);
-        let request =
-            orders::new_limit_order_request(Asset::YUT, OrderDirection::BUY, 1.08,2.0, 2310000000000);
-        let mut result = orderbook.process_order(request);
-
-        println!("{:?}", result);
-        println!("{:?}", orderbook.get_l1_tick());
+        let req = orders::limit_order_cancel_request(4 as u64, OrderDirection::BUY);
+        let mut result = orderbook.process_order(req);
+        println!("result: {:?}", result);
+        let ins = Instant::now();
+        orderbook.ask_queue.get_depth();
+        println!("time cost: {:?} ns", ins.elapsed().as_nanos());// us
+        orderbook.plot_orderbook();
         orderbook.get_depth();
 
-        let request =
-            orders::new_market_order_request(Asset::YUT, OrderDirection::BUY, 1.0, 2400000000000);
-        let mut result = orderbook.process_order(request);
-        orderbook.get_depth();
-        let request =
-            orders::new_market_order_request(Asset::YUT, OrderDirection::BUY, 1.0, 2400000000000);
-        let mut result = orderbook.process_order(request);
-        orderbook.get_depth();
+        
+
+        // let mut result = orderbook.process_order(request);
+        // let request = orders::new_limit_order_request(
+        //     Asset::YUT,
+        //     OrderDirection::SELL,
+        //     1.36,
+        //     1.0,
+        //     2000000000000,
+        // );
+
+        // let mut result = orderbook.process_order(request);
+        // let request =
+        //     orders::new_market_order_request(Asset::YUT, OrderDirection::BUY, 2.0, 2400000000000);
+        // let mut result = orderbook.process_order(request);
+
+        // let request =
+        //     orders::new_limit_order_request(Asset::YUT, OrderDirection::BUY, 1.08,2.0, 2300000000000);
+        // let mut result = orderbook.process_order(request);
+        // let request =
+        //     orders::new_limit_order_request(Asset::YUT, OrderDirection::BUY, 1.08,2.0, 2310000000000);
+        // let mut result = orderbook.process_order(request);
+
+        // println!("{:?}", result);
+        // println!("{:?}", orderbook.get_l1_tick());
+        // orderbook.get_depth();
+
+        // let request =
+        //     orders::new_market_order_request(Asset::YUT, OrderDirection::BUY, 1.0, 2400000000000);
+        // let mut result = orderbook.process_order(request);
+
+        // let request =
+        //     orders::new_market_order_request(Asset::YUT, OrderDirection::BUY, 1.0, 2400000000000);
+        // let mut result = orderbook.process_order(request);
+        // orderbook.get_depth();
     }
 }

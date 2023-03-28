@@ -151,12 +151,15 @@ impl<T> OrderQueue<T> {
     /// Used internally when current order is partially matched.
     ///
     /// Note: do not modify price or time, cause index doesn't change!
-    pub fn modify_current_order(&mut self, new_order: T) -> bool {
+    pub fn modify_current_order(&mut self, new_order: T, volume:f64) -> bool {
+        println!("Triggle modify current order");
         if let Some(order_id) = self.get_current_order_id() {
             if self.orders.contains_key(&order_id) {
                 self.orders.insert(order_id, new_order);
+                self.idx_queue.as_mut().unwrap().peek_mut().unwrap().volume -=volume;
                 return true;
             }
+
         }
         false
     }
@@ -211,13 +214,15 @@ impl<T> OrderQueue<T> {
     pub fn get_depth(&mut self) ->Option<BTreeMap<String, Vec<f64>>>  {
         if let Some(idx_queue) = self.idx_queue.clone().take() {
             // deconstruct queue
+
+
             let mut active_orders = idx_queue.into_sorted_vec();
 
             let mut rebuilder:BTreeMap<String, Vec<f64>> =BTreeMap::new();
             let sort_order  =active_orders.as_mut_slice();
             sort_order.reverse();
             sort_order.iter().for_each(|order_ptr| {
-                println!("order_ptr: {:?}", order_ptr);
+                //println!("order_ptr: {:?}", order_ptr);
                 let res = rebuilder.entry(order_ptr.price.to_string()).or_insert(vec![]);
 
                 res.push(order_ptr.volume);
@@ -360,7 +365,7 @@ mod test {
 
         assert!(bid_queue.modify_current_order(TestOrder {
             name: "current bid partially matched"
-        },));
+        },1.0),);
 
         assert_eq!(
             bid_queue.pop().unwrap().name,
