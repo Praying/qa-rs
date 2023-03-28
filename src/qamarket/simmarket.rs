@@ -1,5 +1,7 @@
+use std::collections::BTreeMap;
+
 use crate::qaaccount::account::QA_Account;
-use crate::qaaccount::order::QAOrder;
+use crate::qaaccount::order::{QAOrder, self};
 use crate::qamarket::matchengine::{
     domain::OrderDirection,
     orderbook::{Failed, Orderbook, Success},
@@ -412,6 +414,14 @@ impl QASIMMarket {
             single_order_book.plot_orderbook();
         }
     }
+
+    pub fn get_depth(&mut self){
+        for (_, single_order_book) in self.OrderBook.iter_mut(){
+            let b_dep = single_order_book.bid_queue.get_depth();
+            let a_dep = single_order_book.ask_queue.get_depth();
+
+        }
+    }
 }
 
 #[pymethods]
@@ -474,5 +484,44 @@ impl QASIMMarket {
         //     QA_Portfolio::new(self.portfolio_name.clone(), qifislice).get_portfolio_qifi();
         let v = serde_json::to_string(&qifislice).unwrap();
         Ok(v)
+    }
+
+    #[pyo3(name ="get_depth")]
+    pub fn py_get_depth(&mut self, code: &str) -> PyResult<String> {
+        match self.OrderBook.get_mut(code) {
+            Some(orderbook) =>{
+
+                let mut snapshot = BTreeMap::new();
+                let ask_depth = orderbook.ask_queue.get_depth();
+                let bid_depth = orderbook.bid_queue.get_depth();
+
+                match ask_depth {
+                    Some(ask) => {
+                        snapshot.insert("ask", ask);
+                    }
+                    None => {
+                        snapshot.insert("ask", BTreeMap::new());
+                    }
+                }
+
+                match bid_depth{
+                    Some(bid) => {
+                        snapshot.insert("bid", bid);
+                    }
+                    None => {
+                        snapshot.insert("bid", BTreeMap::new());
+                    }
+                }
+
+                let v = serde_json::to_string(&snapshot).unwrap();
+                Ok(v)
+
+
+            }
+            None =>{
+                Err(PyErr::new::<PyTypeError, _>("Error message"))
+            }
+        }
+        
     }
 }

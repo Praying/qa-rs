@@ -1,14 +1,17 @@
-use super::domain::OrderDirection;
+#![feature(binary_heap_as_slice)]
+use super::domain::{OrderDirection, Order};
+
 use chrono::Utc;
 use std::cmp::Ordering;
-use std::collections::{BinaryHeap, HashMap};
-
-#[derive(Clone)]
+use std::collections::{BinaryHeap,BTreeMap };
+use hashbrown::HashMap;
+#[derive(Clone, Debug)]
 struct OrderIndex {
     id: u64,
     price: f64,
     timestamp: i64,
     order_side: OrderDirection,
+    volume: f64
 }
 
 // Arrange at first by price and after that by time
@@ -50,6 +53,8 @@ impl PartialEq for OrderIndex {
 impl Eq for OrderIndex {}
 
 /// Public methods
+/// 
+
 pub struct OrderQueue<T> {
     // use Option in order to replace heap in mutable borrow
     idx_queue: Option<BinaryHeap<OrderIndex>>,
@@ -98,7 +103,10 @@ impl<T> OrderQueue<T> {
     }
 
     // Add new limit order to the queue
-    pub fn insert(&mut self, id: u64, price: f64, ts: i64, order: T) -> bool {
+    pub fn insert(&mut self, id: u64, price: f64, ts: i64, volume: f64, order:T) -> bool 
+
+    {
+
         if self.orders.contains_key(&id) {
             // do not update existing order
             return false;
@@ -110,17 +118,18 @@ impl<T> OrderQueue<T> {
             price,
             timestamp: ts,
             order_side: self.queue_side,
+            volume: volume,
         });
         self.orders.insert(id, order);
         true
     }
 
     // use it when price was changed
-    pub fn amend(&mut self, id: u64, price: f64, ts: i64, order: T) -> bool {
+    pub fn amend(&mut self, id: u64, price: f64, ts: i64,volume: f64,  order: T) -> bool {
         if self.orders.contains_key(&id) {
             // store new order data
             self.orders.insert(id, order);
-            self.rebuild_idx(id, price, ts);
+            self.rebuild_idx(id, price, ts, volume);
             true
         } else {
             false
@@ -172,7 +181,8 @@ impl<T> OrderQueue<T> {
     }
 
     /// Recreate order-index queue with changed index info
-    fn rebuild_idx(&mut self, id: u64, price: f64, ts: i64) {
+    fn rebuild_idx(&mut self, id: u64, price: f64, ts: i64, volume: f64) {
+        println!("Triggle Rebuild queue: {} {} {}", id, price, ts);
         if let Some(idx_queue) = self.idx_queue.take() {
             // deconstruct queue
             let mut active_orders = idx_queue.into_vec();
@@ -184,9 +194,10 @@ impl<T> OrderQueue<T> {
                 price,
                 timestamp: ts,
                 order_side: self.queue_side,
+                volume: volume
             });
             // construct new queue
-            let mut amended_queue = BinaryHeap::from(active_orders);
+            let  amended_queue = BinaryHeap::from(active_orders);
             self.idx_queue = Some(amended_queue);
         }
     }
@@ -195,6 +206,28 @@ impl<T> OrderQueue<T> {
     fn get_current_order_id(&self) -> Option<u64> {
         let order_id = self.idx_queue.as_ref()?.peek()?;
         Some(order_id.id)
+    }
+
+    pub fn get_depth(&mut self) ->Option<BTreeMap<String, Vec<f64>>>  {
+        if let Some(idx_queue) = self.idx_queue.clone().take() {
+            // deconstruct queue
+            let mut active_orders = idx_queue.into_sorted_vec();
+
+            let mut rebuilder:BTreeMap<String, Vec<f64>> =BTreeMap::new();
+            let sort_order  =active_orders.as_mut_slice();
+            sort_order.reverse();
+            sort_order.iter().for_each(|order_ptr| {
+                println!("order_ptr: {:?}", order_ptr);
+                let res = rebuilder.entry(order_ptr.price.to_string()).or_insert(vec![]);
+
+                res.push(order_ptr.volume);
+            });
+
+            Some(rebuilder)
+        }
+        else{
+            None
+        }
     }
 }
 
@@ -218,12 +251,14 @@ mod test {
             1,
             1.01,
             Utc::now().timestamp_nanos(),
+            20.0,
             TestOrder { name: "low bid" },
         ));
         assert!(bid_queue.insert(
             2,
             1.02,
             Utc::now().timestamp_nanos(),
+            20.0,
             TestOrder {
                 name: "high bid first"
             },
@@ -233,6 +268,7 @@ mod test {
             3,
             1.02,
             Utc::now().timestamp_nanos(),
+            20.0,
             TestOrder {
                 name: "high bid second"
             },
@@ -248,6 +284,7 @@ mod test {
             1,
             1.01,
             Utc::now().timestamp_nanos(),
+            20.0,
             TestOrder {
                 name: "low ask first"
             },
@@ -256,12 +293,14 @@ mod test {
             2,
             1.02,
             Utc::now().timestamp_nanos(),
+            20.0,
             TestOrder { name: "high ask" },
         ));
         assert!(ask_queue.insert(
             3,
             1.01,
             Utc::now().timestamp_nanos(),
+            20.0,
             TestOrder {
                 name: "low ask second"
             },
@@ -281,6 +320,7 @@ mod test {
             1,
             1.01,
             Utc::now().timestamp_nanos(),
+            20.0,
             TestOrder { name: "first bid" },
         ));
 
@@ -289,6 +329,7 @@ mod test {
             1,
             1.02,
             Utc::now().timestamp_nanos(),
+            20.0,
             TestOrder {
                 name: "another first bid"
             },
@@ -338,12 +379,14 @@ mod test {
             2,
             0.99,
             Utc::now().timestamp_nanos(),
+            20.0,
             TestOrder { name: "new first" },
         ));
         assert!(ask_queue.amend(
             1,
             1.01,
             Utc::now().timestamp_nanos(),
+            20.0,
             TestOrder { name: "new last" },
         ));
         // non-exist order
@@ -351,6 +394,7 @@ mod test {
             4,
             3.03,
             Utc::now().timestamp_nanos(),
+            20.0,
             TestOrder {
                 name: "nonexistent"
             },

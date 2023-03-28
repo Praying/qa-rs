@@ -65,11 +65,11 @@ where
     Asset: Debug + Clone + Copy + Eq,
 {
     order_book_id: Asset,
-    bid_queue: OrderQueue<Order<Asset>>,
-    ask_queue: OrderQueue<Order<Asset>>,
+    pub bid_queue: OrderQueue<Order<Asset>>,
+    pub ask_queue: OrderQueue<Order<Asset>>,
     seq: sequence::TradeSequence,
     order_validator: OrderRequestValidator<Asset>,
-    lastprice: f64,
+    pub lastprice: f64,
 }
 
 impl<Asset> Orderbook<Asset>
@@ -77,11 +77,7 @@ where
     Asset: Debug + Clone + Copy + Eq,
 {
     /// Create new orderbook for pair of assets
-    ///
-    /// # Examples
-    ///
-    /// Basic usage:
-    // todo fix doc test!
+
     pub fn new(order_book_id: Asset) -> Self {
         Orderbook {
             order_book_id,
@@ -225,6 +221,7 @@ where
         volume: f64,
     ) {
         // get copy of the current limit order
+
         let opposite_order_result = {
             let opposite_queue = match direction {
                 OrderDirection::BUY => &mut self.ask_queue,
@@ -256,7 +253,22 @@ where
             }
         } else {
             // no limit orders found
-            results.push(Err(Failed::NoMatch(order_id)));
+            //results.push(Err(Failed::NoMatch(order_id)));
+
+            // add market order to the queue
+            println!(
+                "no opposite order found,markettolimit, current lastprice {:#?}",
+                self.lastprice
+            );
+            self.process_limit_order(
+                results,
+                order_id,
+                order_book_id,
+                direction,
+                self.lastprice,
+                volume,
+                Utc::now().timestamp_nanos(),
+            );
         }
     }
 
@@ -353,6 +365,7 @@ where
             order_id,
             price,
             ts,
+            volume,
             Order {
                 order_id,
                 order_book_id: self.order_book_id,
@@ -413,6 +426,7 @@ where
             order_id,
             price,
             ts,
+            volume,
             Order {
                 order_id,
                 order_book_id,
@@ -423,6 +437,15 @@ where
         ) {
             results.push(Err(Failed::DuplicateOrderID(order_id)))
         };
+    }
+
+    pub fn get_depth(&mut self){
+                
+
+        println!("ask queue {:#?}",self.ask_queue.get_depth());
+        println!("-------------------{:#?}--------------------", self.lastprice);
+        println!("bid queue {:#?}",self.bid_queue.get_depth());
+
     }
 
     fn order_matching(
@@ -552,18 +575,20 @@ where
 #[cfg(test)]
 mod test {
 
+    use crate::qaaccount::order;
+
     use super::super::orders;
     use super::*;
 
     #[derive(PartialEq, Eq, Debug, Copy, Clone)]
     pub enum Asset {
         USD,
-        BTC,
+        YUT,
     }
 
     #[test]
     fn cancel_nonexisting() {
-        let mut orderbook = Orderbook::new(Asset::BTC);
+        let mut orderbook = Orderbook::new(Asset::YUT);
         let request = orders::limit_order_cancel_request(1, OrderDirection::BUY);
         let mut result = orderbook.process_order(request);
 
@@ -572,5 +597,115 @@ mod test {
             Err(_) => (),
             _ => panic!("unexpected events"),
         }
+    }
+
+    #[test]
+    fn run_askbid() {
+        let mut orderbook = Orderbook::new(Asset::YUT);
+        let request = orders::new_limit_order_request(
+            Asset::YUT,
+            OrderDirection::BUY,
+            1.0,
+            1.0,
+            2000000000000,
+        );
+        let mut result = orderbook.process_order(request);
+        let request = orders::new_limit_order_request(
+            Asset::YUT,
+            OrderDirection::SELL,
+            1.2,
+            1.0,
+            2000000000000,
+        );
+        let mut result = orderbook.process_order(request);
+        let request = orders::new_limit_order_request(
+            Asset::YUT,
+            OrderDirection::SELL,
+            1.3,
+            1.0,
+            2000000000000,
+        );
+        let mut result = orderbook.process_order(request);
+        let request = orders::new_limit_order_request(
+            Asset::YUT,
+            OrderDirection::SELL,
+            1.1,
+            1.0,
+            2000000000000,
+        );
+        let mut result = orderbook.process_order(request);
+        let request = orders::new_limit_order_request(
+            Asset::YUT,
+            OrderDirection::SELL,
+            1.3,
+            1.0,
+            2000000000000,
+        );
+        let mut result = orderbook.process_order(request);
+        let request = orders::new_limit_order_request(
+            Asset::YUT,
+            OrderDirection::SELL,
+            1.3,
+            2.0,
+            2200000000000,
+        );
+        let mut result = orderbook.process_order(request);
+        let request = orders::new_limit_order_request(
+            Asset::YUT,
+            OrderDirection::SELL,
+            1.35,
+            1.0,
+            2200000000000,
+        );
+        let mut result = orderbook.process_order(request);
+        let request = orders::new_limit_order_request(
+            Asset::YUT,
+            OrderDirection::SELL,
+            1.25,
+            1.0,
+            2200000000000,
+        );
+        let mut result = orderbook.process_order(request);
+        let request = orders::new_limit_order_request(
+            Asset::YUT,
+            OrderDirection::SELL,
+            1.25,
+            1.0,
+            2000000000000,
+        );
+
+        let mut result = orderbook.process_order(request);
+        let request = orders::new_limit_order_request(
+            Asset::YUT,
+            OrderDirection::SELL,
+            1.36,
+            1.0,
+            2000000000000,
+        );
+
+        let mut result = orderbook.process_order(request);
+        let request =
+            orders::new_market_order_request(Asset::YUT, OrderDirection::BUY, 2.0, 2400000000000);
+        let mut result = orderbook.process_order(request);
+
+        let request =
+            orders::new_limit_order_request(Asset::YUT, OrderDirection::BUY, 1.08,2.0, 2300000000000);
+        let mut result = orderbook.process_order(request);
+        let request =
+            orders::new_limit_order_request(Asset::YUT, OrderDirection::BUY, 1.08,2.0, 2310000000000);
+        let mut result = orderbook.process_order(request);
+
+        println!("{:?}", result);
+        println!("{:?}", orderbook.get_l1_tick());
+        orderbook.get_depth();
+
+        let request =
+            orders::new_market_order_request(Asset::YUT, OrderDirection::BUY, 1.0, 2400000000000);
+        let mut result = orderbook.process_order(request);
+        orderbook.get_depth();
+        let request =
+            orders::new_market_order_request(Asset::YUT, OrderDirection::BUY, 1.0, 2400000000000);
+        let mut result = orderbook.process_order(request);
+        orderbook.get_depth();
     }
 }
