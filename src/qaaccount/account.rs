@@ -1407,8 +1407,8 @@ impl QA_Account {
                     //let pos = self.hold.get(code).unwrap();
                     let current_data = slice.get(code);
                     // sell close logic
-                    
-                    if current_data.is_none(){
+
+                    if current_data.is_none() {
                         // 如果股票退市/转股  如： 600068 葛洲坝 2021-09-13 转股中国能建A, 我们允许他以前一个收盘日价格卖出
                         // 此时已经无法从市场获取该票的价格, 因此采用lastprice + 无限制的volume
                         if pos.volume_long_his > 0.0 {
@@ -1451,18 +1451,18 @@ impl QA_Account {
                                 1000000000000.0,
                             ));
                         }
-                    }else{
+                    } else {
                         let current_data = current_data.unwrap();
                         let price = match label {
                             "close" => current_data.close,
-    
+
                             "open" => current_data.open,
                             _ => {
                                 println!("label error, use openprice");
                                 current_data.close
                             }
                         };
-    
+
                         let volume_market_limit = match adjust_market(code).as_ref() {
                             "stock_cn" => 100.0 * (current_data.volume * 0.0025).floor() as f64,
                             "future_cn" => (current_data.volume * 0.25).floor() as f64,
@@ -1471,7 +1471,7 @@ impl QA_Account {
                                 100.0
                             }
                         };
-    
+
                         if pos.volume_long_his > 0.0 {
                             s.send((
                                 code.to_owned(),
@@ -1513,7 +1513,6 @@ impl QA_Account {
                             ));
                         }
                     }
-                    
                 }
             });
 

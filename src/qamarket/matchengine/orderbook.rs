@@ -439,13 +439,13 @@ where
         };
     }
 
-    pub fn get_depth(&mut self){
-                
-
-        println!("ask queue {:#?}",self.ask_queue.get_depth());
-        println!("-------------------{:#?}--------------------", self.lastprice);
-        println!("bid queue {:#?}",self.bid_queue.get_depth());
-
+    pub fn get_depth(&mut self) {
+        println!("ask queue {:#?}", self.ask_queue.get_depth());
+        println!(
+            "-------------------{:#?}--------------------",
+            self.lastprice
+        );
+        println!("bid queue {:#?}", self.bid_queue.get_depth());
     }
 
     fn order_matching(
@@ -492,13 +492,16 @@ where
                     OrderDirection::BUY => &mut self.ask_queue,
                     OrderDirection::SELL => &mut self.bid_queue,
                 };
-                opposite_queue.modify_current_order(Order {
-                    order_id: opposite_order.order_id,
-                    order_book_id,
-                    direction: opposite_order.direction,
-                    price: opposite_order.price,
-                    volume: opposite_order.volume - volume,
-                }, volume);
+                opposite_queue.modify_current_order(
+                    Order {
+                        order_id: opposite_order.order_id,
+                        order_book_id,
+                        direction: opposite_order.direction,
+                        price: opposite_order.price,
+                        volume: opposite_order.volume - volume,
+                    },
+                    volume,
+                );
             }
         } else if volume > opposite_order.volume {
             // partially fill new limit order, fill opposite limit and notify to process the rest
@@ -575,10 +578,10 @@ where
 #[cfg(test)]
 mod test {
 
-    use crate::qaaccount::order;
-    use std::time::Instant; // timer
     use super::super::orders;
     use super::*;
+    use crate::qaaccount::order;
+    use std::time::Instant; // timer
 
     #[derive(PartialEq, Eq, Debug, Copy, Clone)]
     pub enum Asset {
@@ -633,7 +636,7 @@ mod test {
             300.0,
             2000000000000,
         );
-        
+
         let mut result = orderbook.process_order(request);
         println!("result: {:?}", result);
         let request = orders::new_limit_order_request(
@@ -645,7 +648,7 @@ mod test {
         );
 
         let mut result = orderbook.process_order(request);
-        
+
         let request = orders::new_limit_order_request(
             Asset::YUT,
             OrderDirection::SELL,
@@ -676,11 +679,9 @@ mod test {
         println!("result: {:?}", result);
         let ins = Instant::now();
         orderbook.ask_queue.get_depth();
-        println!("time cost: {:?} ns", ins.elapsed().as_nanos());// us
+        println!("time cost: {:?} ns", ins.elapsed().as_nanos()); // us
         orderbook.plot_orderbook();
         orderbook.get_depth();
-
-        
 
         // let mut result = orderbook.process_order(request);
         // let request = orders::new_limit_order_request(

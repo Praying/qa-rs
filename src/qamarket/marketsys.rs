@@ -116,12 +116,11 @@ impl QAMarket {
         // from settle table
         self.reg_account.par_iter_mut().for_each(|(_, acc)| {
             for code in acc.get_code_subscribed() {
-                
                 let kline = slice.get(&code);
                 if kline.is_none() {
                     println!("can not find kline for {} {}", code, self.today);
                     continue;
-                }else{
+                } else {
                     let kline = kline.unwrap();
                     if kline.dividend_cash_before_tax != 0.0 {
                         // println!(
@@ -140,10 +139,8 @@ impl QAMarket {
                     let price = kline.open;
                     acc.on_price_change(code, price, self.today.clone());
                 }
-                
             }
         });
-
 
         // for acc in self.reg_account.values_mut() {
         //     for code in acc.get_code_subscribed() {
@@ -301,7 +298,6 @@ impl QAMarket {
 
             acc.settle()
         });
-
 
         // for acc in self.reg_account.values_mut() {
         //     for code in acc.get_code_subscribed() {
@@ -486,19 +482,12 @@ impl QAMarket {
         let mut result = HashMap::new();
         for acc in self.reg_account.values_mut() {
             for code in acc.get_code_subscribed() {
-
                 let codex = slice.get(&code);
                 if codex.is_none() {
                     continue;
-                }else{
-                    acc.on_price_change(
-                        code.clone(),
-                        codex.unwrap().close,
-                        self.today.clone(),
-                    )
+                } else {
+                    acc.on_price_change(code.clone(), codex.unwrap().close, self.today.clone())
                 }
-
-                
             }
             let qifi_slice = acc.get_qifi_slice();
             let cache_acc = self.cache.get_mut(&qifi_slice.account_cookie).unwrap();
@@ -513,7 +502,6 @@ impl QAMarket {
         let cache_port = self.cache.get_mut(&self.portfolio_name).unwrap();
         cache_port.push(portqifi.clone());
         result.insert(self.portfolio_name.clone(), portqifi);
-
 
         let v = serde_json::to_string(&result).unwrap();
         Ok(v)
@@ -677,6 +665,4 @@ impl QAMarket {
     //         Err(PyErr::new::<PyTypeError, _>("Error message"))
     //     }
     // }
-
-
 }

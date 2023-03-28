@@ -1,17 +1,17 @@
 #![feature(binary_heap_as_slice)]
-use super::domain::{OrderDirection, Order};
+use super::domain::{Order, OrderDirection};
 
 use chrono::Utc;
-use std::cmp::Ordering;
-use std::collections::{BinaryHeap,BTreeMap };
 use hashbrown::HashMap;
+use std::cmp::Ordering;
+use std::collections::{BTreeMap, BinaryHeap};
 #[derive(Clone, Debug)]
 struct OrderIndex {
     id: u64,
     price: f64,
     timestamp: i64,
     order_side: OrderDirection,
-    volume: f64
+    volume: f64,
 }
 
 // Arrange at first by price and after that by time
@@ -53,7 +53,7 @@ impl PartialEq for OrderIndex {
 impl Eq for OrderIndex {}
 
 /// Public methods
-/// 
+///
 
 pub struct OrderQueue<T> {
     // use Option in order to replace heap in mutable borrow
@@ -103,10 +103,7 @@ impl<T> OrderQueue<T> {
     }
 
     // Add new limit order to the queue
-    pub fn insert(&mut self, id: u64, price: f64, ts: i64, volume: f64, order:T) -> bool 
-
-    {
-
+    pub fn insert(&mut self, id: u64, price: f64, ts: i64, volume: f64, order: T) -> bool {
         if self.orders.contains_key(&id) {
             // do not update existing order
             return false;
@@ -125,7 +122,7 @@ impl<T> OrderQueue<T> {
     }
 
     // use it when price was changed
-    pub fn amend(&mut self, id: u64, price: f64, ts: i64,volume: f64,  order: T) -> bool {
+    pub fn amend(&mut self, id: u64, price: f64, ts: i64, volume: f64, order: T) -> bool {
         if self.orders.contains_key(&id) {
             // store new order data
             self.orders.insert(id, order);
@@ -151,15 +148,14 @@ impl<T> OrderQueue<T> {
     /// Used internally when current order is partially matched.
     ///
     /// Note: do not modify price or time, cause index doesn't change!
-    pub fn modify_current_order(&mut self, new_order: T, volume:f64) -> bool {
+    pub fn modify_current_order(&mut self, new_order: T, volume: f64) -> bool {
         println!("Triggle modify current order");
         if let Some(order_id) = self.get_current_order_id() {
             if self.orders.contains_key(&order_id) {
                 self.orders.insert(order_id, new_order);
-                self.idx_queue.as_mut().unwrap().peek_mut().unwrap().volume -=volume;
+                self.idx_queue.as_mut().unwrap().peek_mut().unwrap().volume -= volume;
                 return true;
             }
-
         }
         false
     }
@@ -197,10 +193,10 @@ impl<T> OrderQueue<T> {
                 price,
                 timestamp: ts,
                 order_side: self.queue_side,
-                volume: volume
+                volume: volume,
             });
             // construct new queue
-            let  amended_queue = BinaryHeap::from(active_orders);
+            let amended_queue = BinaryHeap::from(active_orders);
             self.idx_queue = Some(amended_queue);
         }
     }
@@ -211,26 +207,26 @@ impl<T> OrderQueue<T> {
         Some(order_id.id)
     }
 
-    pub fn get_depth(&mut self) ->Option<BTreeMap<String, Vec<f64>>>  {
+    pub fn get_depth(&mut self) -> Option<BTreeMap<String, Vec<f64>>> {
         if let Some(idx_queue) = self.idx_queue.clone().take() {
             // deconstruct queue
 
-
             let mut active_orders = idx_queue.into_sorted_vec();
 
-            let mut rebuilder:BTreeMap<String, Vec<f64>> =BTreeMap::new();
-            let sort_order  =active_orders.as_mut_slice();
+            let mut rebuilder: BTreeMap<String, Vec<f64>> = BTreeMap::new();
+            let sort_order = active_orders.as_mut_slice();
             sort_order.reverse();
             sort_order.iter().for_each(|order_ptr| {
                 //println!("order_ptr: {:?}", order_ptr);
-                let res = rebuilder.entry(order_ptr.price.to_string()).or_insert(vec![]);
+                let res = rebuilder
+                    .entry(order_ptr.price.to_string())
+                    .or_insert(vec![]);
 
                 res.push(order_ptr.volume);
             });
 
             Some(rebuilder)
-        }
-        else{
+        } else {
             None
         }
     }
@@ -363,9 +359,12 @@ mod test {
     fn queue_operations_modify_order() {
         let mut bid_queue = get_queue_bids();
 
-        assert!(bid_queue.modify_current_order(TestOrder {
-            name: "current bid partially matched"
-        },1.0),);
+        assert!(bid_queue.modify_current_order(
+            TestOrder {
+                name: "current bid partially matched"
+            },
+            1.0
+        ),);
 
         assert_eq!(
             bid_queue.pop().unwrap().name,
