@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[31]:
-
 import json
 from QAPUBSUB.producer import publisher_routing, publisher_topic
 import threading
