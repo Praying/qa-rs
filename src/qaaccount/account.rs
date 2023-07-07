@@ -1358,32 +1358,40 @@ impl QA_Account {
             .clone()
             .par_iter()
             .map(|(code, weight)| {
-                let data = slice.get(code).unwrap();
-                match label {
-                    "close" => {
-                        let price = data.close;
-                        let amount = (total_money * weight) / price;
-                        match adjust_market(code).as_ref() {
-                            "stock_cn" => (code.clone(), (amount / 100.0).floor() as f64 * 100.0),
-                            "future_cn" => (code.clone(), amount),
-                            _ => (code.clone(), amount),
+                let kline = slice.get(code);//.unwrap();
+                if kline.is_none() {
+                    println!("can not find kline for {} {}", code, self.time);
+                    (code.clone(), 0.0)
+                }else{
+                    let data = kline.unwrap();
+                    match label {
+                        "close" => {
+                            let price = data.close;
+                            let amount = (total_money * weight) / price;
+                            match adjust_market(code).as_ref() {
+                                "stock_cn" => (code.clone(), (amount / 100.0).floor() as f64 * 100.0),
+                                "future_cn" => (code.clone(), amount),
+                                _ => (code.clone(), amount),
+                            }
                         }
-                    }
-                    "open" => {
-                        let price = data.open;
-                        let amount = (total_money * weight) / price;
-                        match adjust_market(code).as_ref() {
-                            "stock_cn" => (code.clone(), (amount / 100.0).floor() as f64 * 100.0),
-                            "future_cn" => (code.clone(), amount),
-                            _ => (code.clone(), amount),
+                        "open" => {
+                            let price = data.open;
+                            let amount = (total_money * weight) / price;
+                            match adjust_market(code).as_ref() {
+                                "stock_cn" => (code.clone(), (amount / 100.0).floor() as f64 * 100.0),
+                                "future_cn" => (code.clone(), amount),
+                                _ => (code.clone(), amount),
+                            }
                         }
-                    }
-                    _ => {
-                        let price = data.open;
-                        let amount = (total_money * weight) / price;
-                        (code.clone(), amount)
+                        _ => {
+                            let price = data.open;
+                            let amount = (total_money * weight) / price;
+                            (code.clone(), amount)
+                        }
                     }
                 }
+
+               
             })
             .collect::<HashMap<String, f64>>();
         self.pre_target_weight_for_close(res, slice, label, target_panel);
@@ -1520,176 +1528,180 @@ impl QA_Account {
             .clone()
             .par_iter()
             .for_each_with(sender, |s, (code, target)| {
-                let current_data = slice.get(code).unwrap();
-
-                let posx = self.get_position_unmut(code);
-                let amount = target.clone();
-                let price = match label {
-                    "close" => current_data.close,
-
-                    "open" => current_data.open,
-                    _ => {
-                        println!("label error, use openprice");
-                        current_data.close
-                    }
-                };
-                let volume_market_limit = match adjust_market(code).as_ref() {
-                    "stock_cn" => 100.0 * (current_data.volume * 0.0025).floor() as f64,
-                    "future_cn" => (current_data.volume * 0.25).floor() as f64,
-                    _ => {
-                        println!("market error, use 100");
-                        100.0
-                    }
-                };
-                if posx.is_none() {
-                    // if amount > 0.0 {
-                    //     s.send((
-                    //         code.to_owned(),
-                    //         price,
-                    //         amount,
-                    //         "buy_open",
-                    //         current_data.limit_up,
-                    //         volume_market_limit
-                    //     ));
-                    // } else {
-                    //     s.send((
-                    //         code.to_owned(),
-                    //         price,
-                    //         amount.abs(),
-                    //         "sell_open",
-                    //         current_data.limit_down,
-                    //         volume_market_limit
-                    //     ));
-                    // }
+                let kline = slice.get(code);//.unwrap();
+                if kline.is_none() {
+                    println!("code {} is not in data", code);
                 } else {
-                    let pos = posx.unwrap();
-                    let volume_long = pos.volume_long_unmut();
-                    let volume_short = pos.volume_short_unmut();
+                    let current_data = kline.unwrap();
+                    let posx = self.get_position_unmut(code);
+                    let amount = target.clone();
+                    let price = match label {
+                        "close" => current_data.close,
 
-                    if volume_long + volume_short > 0.0 {
-                        // code有持仓且,调仓
+                        "open" => current_data.open,
+                        _ => {
+                            println!("label error, use openprice");
+                            current_data.close
+                        }
+                    };
+                    let volume_market_limit = match adjust_market(code).as_ref() {
+                        "stock_cn" => 100.0 * (current_data.volume * 0.0025).floor() as f64,
+                        "future_cn" => (current_data.volume * 0.25).floor() as f64,
+                        _ => {
+                            println!("market error, use 100");
+                            100.0
+                        }
+                    };
+                    if posx.is_none() {
+                        // if amount > 0.0 {
+                        //     s.send((
+                        //         code.to_owned(),
+                        //         price,
+                        //         amount,
+                        //         "buy_open",
+                        //         current_data.limit_up,
+                        //         volume_market_limit
+                        //     ));
+                        // } else {
+                        //     s.send((
+                        //         code.to_owned(),
+                        //         price,
+                        //         amount.abs(),
+                        //         "sell_open",
+                        //         current_data.limit_down,
+                        //         volume_market_limit
+                        //     ));
+                        // }
+                    } else {
+                        let pos = posx.unwrap();
+                        let volume_long = pos.volume_long_unmut();
+                        let volume_short = pos.volume_short_unmut();
 
-                        if amount > 0.0 {
-                            if volume_short > 0.0 {
-                                // 先平空单
-                                s.send((
-                                    code.to_owned(),
-                                    price,
-                                    volume_short,
-                                    "buy_close",
-                                    current_data.limit_up,
-                                    volume_market_limit,
-                                ));
-                            }
+                        if volume_long + volume_short > 0.0 {
+                            // code有持仓且,调仓
 
-                            if amount > volume_long {
-                                s.send((
-                                    code.to_owned(),
-                                    price,
-                                    amount - volume_long,
-                                    "buy_open",
-                                    current_data.limit_up,
-                                    volume_market_limit,
-                                ));
-                                //self.acc.buy_open(code, price, amount - volume_long);
-                            } else if amount < volume_long {
-                                s.send((
-                                    code.to_owned(),
-                                    price,
-                                    volume_long - amount,
-                                    "sell_close",
-                                    current_data.limit_down,
-                                    volume_market_limit,
-                                ));
-                                //self.acc.sell_close(code, price, volume_long - amount);
-                            }
-                        } else if amount < 0.0 {
-                            if volume_long > 0.0 {
-                                // 先平多单
-                                s.send((
-                                    code.to_owned(),
-                                    price,
-                                    volume_long,
-                                    "sell_close",
-                                    current_data.limit_down,
-                                    volume_market_limit,
-                                ));
-                                //self.acc.sell_close(code, price, volume_long);
-                            }
+                            if amount > 0.0 {
+                                if volume_short > 0.0 {
+                                    // 先平空单
+                                    s.send((
+                                        code.to_owned(),
+                                        price,
+                                        volume_short,
+                                        "buy_close",
+                                        current_data.limit_up,
+                                        volume_market_limit,
+                                    ));
+                                }
 
-                            let amount = amount.abs();
-                            if amount > volume_short {
-                                s.send((
-                                    code.to_owned(),
-                                    price,
-                                    amount - volume_short,
-                                    "sell_open",
-                                    current_data.limit_down,
-                                    volume_market_limit,
-                                ));
-                                //self.acc.sell_open(code, price, amount - volume_short);
-                            } else if amount < volume_short {
-                                s.send((
-                                    code.to_owned(),
-                                    price,
-                                    volume_short - amount,
-                                    "buy_close",
-                                    current_data.limit_up,
-                                    volume_market_limit,
-                                ));
-                                //self.acc.buy_close(code, price, volume_short - amount);
+                                if amount > volume_long {
+                                    s.send((
+                                        code.to_owned(),
+                                        price,
+                                        amount - volume_long,
+                                        "buy_open",
+                                        current_data.limit_up,
+                                        volume_market_limit,
+                                    ));
+                                    //self.acc.buy_open(code, price, amount - volume_long);
+                                } else if amount < volume_long {
+                                    s.send((
+                                        code.to_owned(),
+                                        price,
+                                        volume_long - amount,
+                                        "sell_close",
+                                        current_data.limit_down,
+                                        volume_market_limit,
+                                    ));
+                                    //self.acc.sell_close(code, price, volume_long - amount);
+                                }
+                            } else if amount < 0.0 {
+                                if volume_long > 0.0 {
+                                    // 先平多单
+                                    s.send((
+                                        code.to_owned(),
+                                        price,
+                                        volume_long,
+                                        "sell_close",
+                                        current_data.limit_down,
+                                        volume_market_limit,
+                                    ));
+                                    //self.acc.sell_close(code, price, volume_long);
+                                }
+
+                                let amount = amount.abs();
+                                if amount > volume_short {
+                                    s.send((
+                                        code.to_owned(),
+                                        price,
+                                        amount - volume_short,
+                                        "sell_open",
+                                        current_data.limit_down,
+                                        volume_market_limit,
+                                    ));
+                                    //self.acc.sell_open(code, price, amount - volume_short);
+                                } else if amount < volume_short {
+                                    s.send((
+                                        code.to_owned(),
+                                        price,
+                                        volume_short - amount,
+                                        "buy_close",
+                                        current_data.limit_up,
+                                        volume_market_limit,
+                                    ));
+                                    //self.acc.buy_close(code, price, volume_short - amount);
+                                }
+                            } else {
+                                //amount==0全平
+                                if volume_long > 0.0 {
+                                    s.send((
+                                        code.to_owned(),
+                                        price,
+                                        volume_long,
+                                        "sell_close",
+                                        current_data.limit_down,
+                                        volume_market_limit,
+                                    ));
+                                    //self.acc.sell_close(code, price, volume_long);
+                                }
+                                if volume_short > 0.0 {
+                                    s.send((
+                                        code.to_owned(),
+                                        price,
+                                        volume_short,
+                                        "buy_close",
+                                        current_data.limit_up,
+                                        volume_market_limit,
+                                    ));
+                                    //self.acc.buy_close(code, price, volume_short);
+                                }
                             }
-                        } else {
-                            //amount==0全平
-                            if volume_long > 0.0 {
-                                s.send((
-                                    code.to_owned(),
-                                    price,
-                                    volume_long,
-                                    "sell_close",
-                                    current_data.limit_down,
-                                    volume_market_limit,
-                                ));
-                                //self.acc.sell_close(code, price, volume_long);
-                            }
-                            if volume_short > 0.0 {
-                                s.send((
-                                    code.to_owned(),
-                                    price,
-                                    volume_short,
-                                    "buy_close",
-                                    current_data.limit_up,
-                                    volume_market_limit,
-                                ));
-                                //self.acc.buy_close(code, price, volume_short);
+                        } else if volume_long + volume_short == 0.0 {
+                            // code没有持仓,新开仓
+                            if amount > 0.0 {
+                                // s.send((
+                                //     code.to_owned(),
+                                //     price,
+                                //     amount,
+                                //     "buy_open",
+                                //     current_data.limit_up,
+                                //     volume_market_limit
+                                // ));
+                                //self.acc.buy_open(code, price, amount);
+                            } else {
+                                // s.send((
+                                //     code.to_owned(),
+                                //     price,
+                                //     amount.abs(),
+                                //     "sell_open",
+                                //     current_data.limit_down,
+                                //     volume_market_limit
+                                // ));
+                                //self.acc.sell_open(code, price, -amount);
                             }
                         }
-                    } else if volume_long + volume_short == 0.0 {
-                        // code没有持仓,新开仓
-                        if amount > 0.0 {
-                            // s.send((
-                            //     code.to_owned(),
-                            //     price,
-                            //     amount,
-                            //     "buy_open",
-                            //     current_data.limit_up,
-                            //     volume_market_limit
-                            // ));
-                            //self.acc.buy_open(code, price, amount);
-                        } else {
-                            // s.send((
-                            //     code.to_owned(),
-                            //     price,
-                            //     amount.abs(),
-                            //     "sell_open",
-                            //     current_data.limit_down,
-                            //     volume_market_limit
-                            // ));
-                            //self.acc.sell_open(code, price, -amount);
-                        }
+
+                        // 获取到pos但volume可能为0
                     }
-
-                    // 获取到pos但volume可能为0
                 }
             });
         let order_list: Vec<(String, f64, f64, &str, f64, f64)> = receiver.iter().collect();
@@ -1797,30 +1809,35 @@ impl QA_Account {
             .clone()
             .par_iter()
             .map(|(code, weight)| {
-                let data = slice.get(code).unwrap();
-                match label {
-                    "close" => {
-                        let price = data.close;
-                        let amount = (total_money * weight) / price;
-                        match adjust_market(code).as_ref() {
-                            "stock_cn" => (code.clone(), (amount / 100.0).floor() as f64 * 100.0),
-                            "future_cn" => (code.clone(), amount),
-                            _ => (code.clone(), amount),
+                let kline = slice.get(code);//
+                if kline.is_none() {
+                    (code.clone(), 0.0)
+                } else {
+                    let data = kline.unwrap();
+                    match label {
+                        "close" => {
+                            let price = data.close;
+                            let amount = (total_money * weight) / price;
+                            match adjust_market(code).as_ref() {
+                                "stock_cn" => (code.clone(), (amount / 100.0).floor() as f64 * 100.0),
+                                "future_cn" => (code.clone(), amount),
+                                _ => (code.clone(), amount),
+                            }
                         }
-                    }
-                    "open" => {
-                        let price = data.open;
-                        let amount = (total_money * weight) / price;
-                        match adjust_market(code).as_ref() {
-                            "stock_cn" => (code.clone(), (amount / 100.0).floor() as f64 * 100.0),
-                            "future_cn" => (code.clone(), amount),
-                            _ => (code.clone(), amount),
+                        "open" => {
+                            let price = data.open;
+                            let amount = (total_money * weight) / price;
+                            match adjust_market(code).as_ref() {
+                                "stock_cn" => (code.clone(), (amount / 100.0).floor() as f64 * 100.0),
+                                "future_cn" => (code.clone(), amount),
+                                _ => (code.clone(), amount),
+                            }
                         }
-                    }
-                    _ => {
-                        let price = data.open;
-                        let amount = (total_money * weight) / price;
-                        (code.clone(), amount)
+                        _ => {
+                            let price = data.open;
+                            let amount = (total_money * weight) / price;
+                            (code.clone(), amount)
+                        }
                     }
                 }
             })
@@ -1834,152 +1851,33 @@ impl QA_Account {
         res_adjust
             .par_iter()
             .for_each_with(sender, |s, (code, target)| {
-                let current_data = slice.get(code).unwrap();
-
-                let posx = self.get_position_unmut(code);
-                let amount = target.clone();
-                let price = match label {
-                    "close" => current_data.close,
-
-                    "open" => current_data.open,
-                    _ => {
-                        println!("label error, use openprice");
-                        current_data.close
-                    }
-                };
-                let volume_market_limit = match adjust_market(code).as_ref() {
-                    "stock_cn" => 100.0 * (current_data.volume * 0.0025).floor() as f64,
-                    "future_cn" => (current_data.volume * 0.25).floor() as f64,
-                    _ => {
-                        println!("market error, use 100");
-                        100.0
-                    }
-                };
-                if posx.is_none() {
-                    if amount > 0.0 {
-                        s.send((
-                            code.to_owned(),
-                            price,
-                            amount,
-                            "buy_open",
-                            current_data.limit_up,
-                            volume_market_limit,
-                        ));
-                    } else {
-                        s.send((
-                            code.to_owned(),
-                            price,
-                            amount.abs(),
-                            "sell_open",
-                            current_data.limit_down,
-                            volume_market_limit,
-                        ));
-                    }
+                let kline = slice.get(code);
+                if kline.is_none() {
+                    println!("code error");
                 } else {
-                    let pos = posx.unwrap();
-                    let volume_long = pos.volume_long_unmut();
-                    let volume_short = pos.volume_short_unmut();
+                    let current_data = kline.unwrap();
 
-                    if volume_long + volume_short > 0.0 {
-                        // code有持仓且,调仓
 
-                        if amount > 0.0 {
-                            if volume_short > 0.0 {
-                                // 先平空单
-                                // s.send((
-                                //     code.to_owned(),
-                                //     price,
-                                //     volume_short,
-                                //     "buy_close",
-                                //     current_data.limit_up,
-                                //     volume_market_limit,
-                                // ));
-                            }
+                    let posx = self.get_position_unmut(code);
+                    let amount = target.clone();
+                    let price = match label {
+                        "close" => current_data.close,
 
-                            if amount > volume_long {
-                                s.send((
-                                    code.to_owned(),
-                                    price,
-                                    amount - volume_long,
-                                    "buy_open",
-                                    current_data.limit_up,
-                                    volume_market_limit,
-                                ));
-                                //self.acc.buy_open(code, price, amount - volume_long);
-                            } else if amount < volume_long {
-                                // s.send((
-                                //     code.to_owned(),
-                                //     price,
-                                //     volume_long - amount,
-                                //     "sell_close",
-                                //     current_data.limit_down,
-                                //     volume_market_limit,
-                                // ));
-                                //self.acc.sell_close(code, price, volume_long - amount);
-                            }
-                        } else if amount < 0.0 {
-                            if volume_long > 0.0 {
-                                // 先平多单
-                                // s.send((
-                                //     code.to_owned(),
-                                //     price,
-                                //     volume_long,
-                                //     "sell_close",
-                                //     current_data.limit_down,
-                                //     volume_market_limit,
-                                // ));
-                                //self.acc.sell_close(code, price, volume_long);
-                            }
-
-                            let amount = amount.abs();
-                            if amount > volume_short {
-                                s.send((
-                                    code.to_owned(),
-                                    price,
-                                    amount - volume_short,
-                                    "sell_open",
-                                    current_data.limit_down,
-                                    volume_market_limit,
-                                ));
-                                //self.acc.sell_open(code, price, amount - volume_short);
-                            } else if amount < volume_short {
-                                // s.send((
-                                //     code.to_owned(),
-                                //     price,
-                                //     volume_short - amount,
-                                //     "buy_close",
-                                //     current_data.limit_up,
-                                //     volume_market_limit,
-                                // ));
-                                //self.acc.buy_close(code, price, volume_short - amount);
-                            }
-                        } else {
-                            //amount==0全平
-                            // if volume_long > 0.0 {
-                            //     s.send((
-                            //         code.to_owned(),
-                            //         price,
-                            //         volume_long,
-                            //         "sell_close",
-                            //         current_data.limit_down,
-                            //         volume_market_limit,
-                            //     ));
-                            //     //self.acc.sell_close(code, price, volume_long);
-                            // }
-                            // if volume_short > 0.0 {
-                            //     s.send((
-                            //         code.to_owned(),
-                            //         price,
-                            //         volume_short,
-                            //         "buy_close",
-                            //         current_data.limit_up,
-                            //         volume_market_limit,
-                            //     ));
-                            //     //self.acc.buy_close(code, price, volume_short);
-                            // }
+                        "open" => current_data.open,
+                        _ => {
+                            println!("label error, use openprice");
+                            current_data.close
                         }
-                    } else if volume_long + volume_short == 0.0 {
-                        // code没有持仓,新开仓
+                    };
+                    let volume_market_limit = match adjust_market(code).as_ref() {
+                        "stock_cn" => 100.0 * (current_data.volume * 0.0025).floor() as f64,
+                        "future_cn" => (current_data.volume * 0.25).floor() as f64,
+                        _ => {
+                            println!("market error, use 100");
+                            100.0
+                        }
+                    };
+                    if posx.is_none() {
                         if amount > 0.0 {
                             s.send((
                                 code.to_owned(),
@@ -1989,7 +1887,6 @@ impl QA_Account {
                                 current_data.limit_up,
                                 volume_market_limit,
                             ));
-                            //self.acc.buy_open(code, price, amount);
                         } else {
                             s.send((
                                 code.to_owned(),
@@ -1999,10 +1896,135 @@ impl QA_Account {
                                 current_data.limit_down,
                                 volume_market_limit,
                             ));
-                            //self.acc.sell_open(code, price, -amount);
+                        }
+                    } else {
+                        let pos = posx.unwrap();
+                        let volume_long = pos.volume_long_unmut();
+                        let volume_short = pos.volume_short_unmut();
+
+                        if volume_long + volume_short > 0.0 {
+                            // code有持仓且,调仓
+
+                            if amount > 0.0 {
+                                if volume_short > 0.0 {
+                                    // 先平空单
+                                    // s.send((
+                                    //     code.to_owned(),
+                                    //     price,
+                                    //     volume_short,
+                                    //     "buy_close",
+                                    //     current_data.limit_up,
+                                    //     volume_market_limit,
+                                    // ));
+                                }
+
+                                if amount > volume_long {
+                                    s.send((
+                                        code.to_owned(),
+                                        price,
+                                        amount - volume_long,
+                                        "buy_open",
+                                        current_data.limit_up,
+                                        volume_market_limit,
+                                    ));
+                                    //self.acc.buy_open(code, price, amount - volume_long);
+                                } else if amount < volume_long {
+                                    // s.send((
+                                    //     code.to_owned(),
+                                    //     price,
+                                    //     volume_long - amount,
+                                    //     "sell_close",
+                                    //     current_data.limit_down,
+                                    //     volume_market_limit,
+                                    // ));
+                                    //self.acc.sell_close(code, price, volume_long - amount);
+                                }
+                            } else if amount < 0.0 {
+                                if volume_long > 0.0 {
+                                    // 先平多单
+                                    // s.send((
+                                    //     code.to_owned(),
+                                    //     price,
+                                    //     volume_long,
+                                    //     "sell_close",
+                                    //     current_data.limit_down,
+                                    //     volume_market_limit,
+                                    // ));
+                                    //self.acc.sell_close(code, price, volume_long);
+                                }
+
+                                let amount = amount.abs();
+                                if amount > volume_short {
+                                    s.send((
+                                        code.to_owned(),
+                                        price,
+                                        amount - volume_short,
+                                        "sell_open",
+                                        current_data.limit_down,
+                                        volume_market_limit,
+                                    ));
+                                    //self.acc.sell_open(code, price, amount - volume_short);
+                                } else if amount < volume_short {
+                                    // s.send((
+                                    //     code.to_owned(),
+                                    //     price,
+                                    //     volume_short - amount,
+                                    //     "buy_close",
+                                    //     current_data.limit_up,
+                                    //     volume_market_limit,
+                                    // ));
+                                    //self.acc.buy_close(code, price, volume_short - amount);
+                                }
+                            } else {
+                                //amount==0全平
+                                // if volume_long > 0.0 {
+                                //     s.send((
+                                //         code.to_owned(),
+                                //         price,
+                                //         volume_long,
+                                //         "sell_close",
+                                //         current_data.limit_down,
+                                //         volume_market_limit,
+                                //     ));
+                                //     //self.acc.sell_close(code, price, volume_long);
+                                // }
+                                // if volume_short > 0.0 {
+                                //     s.send((
+                                //         code.to_owned(),
+                                //         price,
+                                //         volume_short,
+                                //         "buy_close",
+                                //         current_data.limit_up,
+                                //         volume_market_limit,
+                                //     ));
+                                //     //self.acc.buy_close(code, price, volume_short);
+                                // }
+                            }
+                        } else if volume_long + volume_short == 0.0 {
+                            // code没有持仓,新开仓
+                            if amount > 0.0 {
+                                s.send((
+                                    code.to_owned(),
+                                    price,
+                                    amount,
+                                    "buy_open",
+                                    current_data.limit_up,
+                                    volume_market_limit,
+                                ));
+                                //self.acc.buy_open(code, price, amount);
+                            } else {
+                                s.send((
+                                    code.to_owned(),
+                                    price,
+                                    amount.abs(),
+                                    "sell_open",
+                                    current_data.limit_down,
+                                    volume_market_limit,
+                                ));
+                                //self.acc.sell_open(code, price, -amount);
+                            }
                         }
                     }
-
                     // 获取到pos但volume可能为0
                 }
             });
