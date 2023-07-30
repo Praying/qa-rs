@@ -1070,6 +1070,21 @@ impl MarketPreset {
                 commission_coeff_today_pervol: 0.0,
             },
         );
+        market_preset.insert(
+            "TL".to_string(),
+            CodePreset {
+                name: "30年期国债".to_string(),
+                unit_table: 20000,
+                price_tick: 0.005,
+                buy_frozen_coeff: 0.005,
+                sell_frozen_coeff: 0.005,
+                exchange: "CFFEX".to_string(),
+                commission_coeff_peramount: 0.0001,
+                commission_coeff_pervol: 0.0,
+                commission_coeff_today_peramount: 0.0001,
+                commission_coeff_today_pervol: 0.0,
+            },
+        );
 
         MarketPreset {
             preset: market_preset,

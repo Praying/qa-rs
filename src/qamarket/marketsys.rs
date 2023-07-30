@@ -191,10 +191,7 @@ impl QAMarket {
         }
     }
 
-    // pub fn on_bar(&mut self, data: &HashMap<String, Kline>) {
-    //     println!("on bar")
-    // }
-    // pub fn on_initmarket(&mut self) {}
+
     #[allow(unused_must_use)]
     pub fn target(
         &mut self,
@@ -299,17 +296,7 @@ impl QAMarket {
             acc.settle()
         });
 
-        // for acc in self.reg_account.values_mut() {
-        //     for code in acc.get_code_subscribed() {
-        //         acc.on_price_change(
-        //             code.clone(),
-        //             slice.get(&code).unwrap().close,
-        //             self.today.clone(),
-        //         )
-        //     }
 
-        //     acc.settle()
-        // }
     }
 }
 
