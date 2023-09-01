@@ -63,11 +63,12 @@ itertools = "0.10.3"
 lmdb = "0.8.0"
 sled = "0.34.7"
 peroxide = "0.32.1"
-arrow2 = {version="0.14.2", features=["full"]}
+#arrow2 = {version="0.14.2", features=["full"]}
 async_once = "0.2.6"
 [dependencies.polars-lazy]
 git = "https://github.com/yutiansut/polars"
 rev = "93771165397938c616a024f95c989cfafa10bdb3"
+
 [dependencies.polars]
 git = "https://github.com/yutiansut/polars"
 rev = "93771165397938c616a024f95c989cfafa10bdb3"
@@ -75,55 +76,7 @@ default-features = false
 features = [
   "parquet",
   "partition_by",
-# "dynamic_groupby",
-#   "zip_with",
-#   "lazy",
-#   "strings",
-#   "temporal",
-#   "random",
-#   "fmt",
-#   "performant",
-#   "dtype-full",
-#   "rows",
-#   "private",
-#   "round_series",
-#   "is_first",
-#   "dot_product",
-#   "concat_str",
-#   "row_hash",
-#   "reinterpret",
-#   "mode",
-#   "cum_agg",
-#   "rolling_window",
-#   "interpolate",
-#   "rank",
-#   "diff",
-#   "moment",
-#   "arange",
-#   "true_div",
-#   "dtype-categorical",
-#   "diagonal_concat",
-#   "horizontal_concat",
-#   "abs",
-#   "ewma",
-#   "dot_diagram",
-#   "dataframe_arithmetic",
-#   "string_encoding",
-#   "product",
-#   "ndarray",
-#   "unique_counts",
-#   "log",
-#   "serde-lazy",
 
-#   "semi_anti_join",
-#   "list_eval",
-#   "cumulative_eval",
-#   "list_to_struct",
-#   "to_dummies",
-#   "string_justify",
-#   "arg_where",
-#   "date_offset",
-#   "is_in"
 ]
 [lib]
 name = "qa_rs"

@@ -486,6 +486,15 @@ impl QA_Account {
             - self.accounts.commission
     }
 
+    // pub fn get_balance_without_profit(&mut self) -> f64 {
+    //     let fp = self.get_floatprofit();
+    //     //info!("{} {} {} {} {}", self.accounts.static_balance, self.accounts.deposit, self.accounts.withdraw, fp, self.accounts.close_profit);
+    //     self.accounts.static_balance + self.accounts.deposit - self.accounts.withdraw
+    //         + fp
+    //         + self.accounts.close_profit
+    //         - self.accounts.commission
+    // }
+
     pub async fn settle_async(&mut self) {
         self.settle();
     }
@@ -875,14 +884,14 @@ impl QA_Account {
                     );
                     return Ok(order);
                 } else {
-                    warn!(
-                        "余额不足,当前可用money {:#?}, 需要冻结 {:#?}",
-                        self.money, frozen
-                    );
+                    // println!(
+                    //     "余额不足,当前可用money {:#?}, 需要冻结 {:#?}",
+                    //     self.money, frozen
+                    // );
 
                     let amount_adj = match adjust_market(code).as_ref() {
                         "stock_cn" => {
-                            let v = 100.0 * (self.money / (coeff * 1.002 * 100.0)).floor() as f64;
+                            let v = 100.0 * (self.money / (coeff * 1.002 * 100.0)) as i32 as f64;
                             if v < 100.0 {
                                 return Err(());
                             } else {
@@ -890,7 +899,7 @@ impl QA_Account {
                             }
                         }
                         "future_cn" => {
-                            let v = (self.money / (coeff * 1.002)).floor() as f64;
+                            let v = (self.money / (coeff * 1.002)) as i32 as f64;
                             if v < 1.0 {
                                 return Err(());
                             } else {
@@ -910,16 +919,16 @@ impl QA_Account {
                         self.frozen.insert(
                             order_id.clone(),
                             QA_Frozen {
-                                amount,
+                                amount: amount_adj,
                                 coeff,
                                 money: frozen,
                             },
                         );
 
-                        warn!(
-                            "{}- {}   调整后的数量 {:#?} price{} frozen{},money_after{}",
-                            datetime, code, amount_adj, price, frozen, self.money
-                        );
+                        // println!(
+                        //     "{}- {}   调整前后的数量{:#?}-> {:#?} price{} frozen{},money_after{}",
+                        //     datetime, code,amount, amount_adj, price, frozen, self.money
+                        // );
                         let order = QAOrder::new(
                             self.account_cookie.clone(),
                             code.clone().to_string(),
@@ -976,6 +985,9 @@ impl QA_Account {
         _order_id: &str,
         price_type: &str,
     ) -> Result<QAOrder, ()> {
+        if amount==0.0{
+            return Err(())
+        }
         self.event_id += 1;
         let datetimer = if time.len() == 10 {
             format!("{} 00:00:00", time.to_string())
@@ -1353,7 +1365,8 @@ impl QA_Account {
         slice: &HashMap<String, Kline>,
         label: &str,
     ) {
-        let total_money = self.get_balance();
+        let total_money = self.get_balance()*0.998;
+        //println!("twa: totalmoney {:#?} balance {:#?}",total_money,self.get_balance());
         let res = target_panel
             .clone()
             .par_iter()
@@ -1369,8 +1382,8 @@ impl QA_Account {
                             let price = data.close;
                             let amount = (total_money * weight) / price;
                             match adjust_market(code).as_ref() {
-                                "stock_cn" => (code.clone(), (amount / 100.0).floor() as f64 * 100.0),
-                                "future_cn" => (code.clone(), amount),
+                                "stock_cn" => (code.clone(), (amount / 100.0) as i32 as f64 * 100.0),
+                                "future_cn" => (code.clone(), amount as i32 as f64),
                                 _ => (code.clone(), amount),
                             }
                         }
@@ -1378,8 +1391,8 @@ impl QA_Account {
                             let price = data.open;
                             let amount = (total_money * weight) / price;
                             match adjust_market(code).as_ref() {
-                                "stock_cn" => (code.clone(), (amount / 100.0).floor() as f64 * 100.0),
-                                "future_cn" => (code.clone(), amount),
+                                "stock_cn" => (code.clone(), (amount / 100.0) as i32 as f64 * 100.0),
+                                "future_cn" => (code.clone(), amount as i32 as f64),
                                 _ => (code.clone(), amount),
                             }
                         }
@@ -1472,8 +1485,8 @@ impl QA_Account {
                         };
 
                         let volume_market_limit = match adjust_market(code).as_ref() {
-                            "stock_cn" => 100.0 * (current_data.volume * 0.0025).floor() as f64,
-                            "future_cn" => (current_data.volume * 0.25).floor() as f64,
+                            "stock_cn" => 100.0 * (current_data.volume * 0.0025) as i32 as f64,
+                            "future_cn" => (current_data.volume * 0.25) as i32 as f64,
                             _ => {
                                 println!("market error, use 100");
                                 100.0
@@ -1545,8 +1558,8 @@ impl QA_Account {
                         }
                     };
                     let volume_market_limit = match adjust_market(code).as_ref() {
-                        "stock_cn" => 100.0 * (current_data.volume * 0.0025).floor() as f64,
-                        "future_cn" => (current_data.volume * 0.25).floor() as f64,
+                        "stock_cn" => 100.0 * (current_data.volume * 0.0025) as i32 as f64,
+                        "future_cn" => (current_data.volume * 0.25) as i32 as f64,
                         _ => {
                             println!("market error, use 100");
                             100.0
@@ -1804,7 +1817,10 @@ impl QA_Account {
         slice: &HashMap<String, Kline>,
         label: &str,
     ) {
-        let total_money = self.get_balance(); //#.clone();
+        
+        let total_money = self.get_balance()*0.998; //#.clone();
+        //println!("twp: totalmoney {:#?} balance {:#?}",total_money,self.get_balance());
+        //println!("pre_target_for_open {:#?}, time {:#?}", target_panel, self.time);
         let res_adjust = target_panel
             .clone()
             .par_iter()
@@ -1819,8 +1835,8 @@ impl QA_Account {
                             let price = data.close;
                             let amount = (total_money * weight) / price;
                             match adjust_market(code).as_ref() {
-                                "stock_cn" => (code.clone(), (amount / 100.0).floor() as f64 * 100.0),
-                                "future_cn" => (code.clone(), amount),
+                                "stock_cn" => (code.clone(), ((amount / 100.0) as i32) as f64 * 100.0),
+                                "future_cn" => (code.clone(),((amount / 100.0) as i32) as f64),
                                 _ => (code.clone(), amount),
                             }
                         }
@@ -1828,8 +1844,8 @@ impl QA_Account {
                             let price = data.open;
                             let amount = (total_money * weight) / price;
                             match adjust_market(code).as_ref() {
-                                "stock_cn" => (code.clone(), (amount / 100.0).floor() as f64 * 100.0),
-                                "future_cn" => (code.clone(), amount),
+                                "stock_cn" => (code.clone(), ((amount / 100.0) as i32) as f64 * 100.0),
+                                "future_cn" => (code.clone(),((amount / 100.0) as i32) as f64),
                                 _ => (code.clone(), amount),
                             }
                         }
@@ -1870,8 +1886,8 @@ impl QA_Account {
                         }
                     };
                     let volume_market_limit = match adjust_market(code).as_ref() {
-                        "stock_cn" => 100.0 * (current_data.volume * 0.0025).floor() as f64,
-                        "future_cn" => (current_data.volume * 0.25).floor() as f64,
+                        "stock_cn" => 100.0 * (current_data.volume * 0.0025) as i32 as f64,
+                        "future_cn" => (current_data.volume * 0.25) as i32 as f64,
                         _ => {
                             println!("market error, use 100");
                             100.0
@@ -2150,8 +2166,8 @@ impl QA_Account {
                     };
 
                     let volume_market_limit = match adjust_market(code).as_ref() {
-                        "stock_cn" => 100.0 * (current_data.volume * 0.0025).floor() as f64,
-                        "future_cn" => (current_data.volume * 0.25).floor() as f64,
+                        "stock_cn" => 100.0 * (current_data.volume * 0.0025) as i32  as f64,
+                        "future_cn" => (current_data.volume * 0.25) as i32 as f64,
                         _ => {
                             println!("market error, use 100");
                             100.0
@@ -2219,8 +2235,8 @@ impl QA_Account {
                     }
                 };
                 let volume_market_limit = match adjust_market(code).as_ref() {
-                    "stock_cn" => 100.0 * (current_data.volume * 0.0025).floor() as f64,
-                    "future_cn" => (current_data.volume * 0.25).floor() as f64,
+                    "stock_cn" => 100.0 * (current_data.volume * 0.0025) as i32 as f64,
+                    "future_cn" => (current_data.volume * 0.25) as i32 as f64,
                     _ => {
                         println!("market error, use 100");
                         100.0

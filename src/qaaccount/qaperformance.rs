@@ -127,10 +127,10 @@ impl QAPerformance_Single {
                     _ => ("", false),
                 };
                 let u = self.temp.get_mut(raw_direction).unwrap();
-                //println!("{:#?}", u);
+
 
                 let mut codeset = self.market_set.get(trade.instrument_id.as_ref());
-                //println!("{:#?}", u);
+
                 let f = u.get_mut(0).unwrap();
 
                 if trade.volume > f.amount {
@@ -368,9 +368,7 @@ mod tests {
 
         acc.sell_close(code, 5.0, "2020-01-21 14:52:00", 3420.0);
 
-        for i in acc.history.iter_mut() {
-            p.insert_trade(i.to_qifitrade());
-        }
+
         println!("{:#?}", p.pair);
         println!("{}", p.get_totalprofit())
     }
@@ -392,20 +390,12 @@ mod tests {
 
         acc.sell_close(code, 2000.0, "2020-04-03 14:52:00", 47.17);
 
-        // acc.buy_open(code, 2000.0, "2020-04-03 13:54:00", 47.1);
-        // acc.sell_close(code, 1000.0, "2020-04-03 13:55:00", 47.11);
-        //
-        // acc.sell_close(code, 1000.0, "2020-04-03 14:52:00", 47.17);
 
         for (_, i) in acc.dailytrades.iter_mut() {
             println!("{:#?}", i);
             let ux: Trade = i.to_owned();
 
-            // insert_date_time: Utc
-            //     .datetime_from_str(time, "%Y-%m-%d %H:%M:%S")
-            //     .unwrap()
-            //     .timestamp_nanos()
-            //     - 28800000000000,
+
             println!(
                 "{:#?}",
                 Utc.timestamp_nanos(ux.trade_date_time.clone() + 28800000000000)
