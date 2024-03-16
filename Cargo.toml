@@ -80,8 +80,7 @@ features = [
 ]
 [lib]
 name = "qa_rs"
-crate-type = ["cdylib"]
-
+crate-type = [ "cdylib"]
 [profile.release]
 codegen-units = 1
 lto = "fat"

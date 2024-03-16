@@ -1,4 +1,5 @@
-use crate::qaaccount::marketpreset::MarketPreset;
+
+use crate::qaaccount::marketpreset::{CodePreset, MarketPreset};
 use crate::qaaccount::order::QAOrder;
 use crate::qaaccount::position::{adjust_market, QA_Frozen, QA_Postions};
 use crate::qaaccount::transaction;
@@ -1380,19 +1381,27 @@ impl QA_Account {
                     match label {
                         "close" => {
                             let price = data.close;
-                            let amount = (total_money * weight) / price;
+                            let mut  amount = (total_money * weight) / price;
                             match adjust_market(code).as_ref() {
                                 "stock_cn" => (code.clone(), (amount / 100.0) as i32 as f64 * 100.0),
-                                "future_cn" => (code.clone(), amount as i32 as f64),
+                                "future_cn" => {
+                                    let preset: CodePreset = MarketPreset::new().get(code.as_ref());
+                                    amount = (amount /preset.unit_table  as f64) ;
+                                    (code.clone(), amount as i32 as f64)
+                                },
                                 _ => (code.clone(), amount),
                             }
                         }
                         "open" => {
                             let price = data.open;
-                            let amount = (total_money * weight) / price;
+                            let mut amount = (total_money * weight) / price;
                             match adjust_market(code).as_ref() {
                                 "stock_cn" => (code.clone(), (amount / 100.0) as i32 as f64 * 100.0),
-                                "future_cn" => (code.clone(), amount as i32 as f64),
+                                "future_cn" => {
+                                    let preset: CodePreset = MarketPreset::new().get(code.as_ref());
+                                    amount = amount/(preset.unit_table  as f64);
+                                    (code.clone(), amount as i32 as f64)
+                                },
                                 _ => (code.clone(), amount),
                             }
                         }
