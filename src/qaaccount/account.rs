@@ -1387,6 +1387,7 @@ impl QA_Account {
                                 "future_cn" => {
                                     let preset: CodePreset = MarketPreset::new().get(code.as_ref());
                                     amount = (amount /preset.unit_table  as f64) ;
+
                                     (code.clone(), amount as i32 as f64)
                                 },
                                 _ => (code.clone(), amount),
@@ -1394,13 +1395,14 @@ impl QA_Account {
                         }
                         "open" => {
                             let price = data.open;
-                            let mut amount = (total_money * weight) / price;
+                            let  amount = (total_money * weight) / price;
                             match adjust_market(code).as_ref() {
                                 "stock_cn" => (code.clone(), (amount / 100.0) as i32 as f64 * 100.0),
                                 "future_cn" => {
                                     let preset: CodePreset = MarketPreset::new().get(code.as_ref());
-                                    amount = amount/(preset.unit_table  as f64);
-                                    (code.clone(), amount as i32 as f64)
+                                    let namount = amount/(preset.unit_table  as f64);
+                                    //println!("future {:#?} amount {:#?}", code,amount);
+                                    (code.clone(), namount as i32 as f64)
                                 },
                                 _ => (code.clone(), amount),
                             }
@@ -1845,7 +1847,12 @@ impl QA_Account {
                             let amount = (total_money * weight) / price;
                             match adjust_market(code).as_ref() {
                                 "stock_cn" => (code.clone(), ((amount / 100.0) as i32) as f64 * 100.0),
-                                "future_cn" => (code.clone(),((amount / 100.0) as i32) as f64),
+                                "future_cn" =>{
+                                    let preset: CodePreset = MarketPreset::new().get(code.as_ref());
+                                    let namount = amount/(preset.unit_table  as f64);
+                                    //println!("future {:#?} amount {:#?}", code,amount);
+                                    (code.clone(), namount as i32 as f64)
+                                },
                                 _ => (code.clone(), amount),
                             }
                         }
@@ -1854,7 +1861,12 @@ impl QA_Account {
                             let amount = (total_money * weight) / price;
                             match adjust_market(code).as_ref() {
                                 "stock_cn" => (code.clone(), ((amount / 100.0) as i32) as f64 * 100.0),
-                                "future_cn" => (code.clone(),((amount / 100.0) as i32) as f64),
+                                "future_cn" => {
+                                    let preset: CodePreset = MarketPreset::new().get(code.as_ref());
+                                    let namount = amount/(preset.unit_table  as f64);
+                                    //println!("future {:#?} amount {:#?}", code,amount);
+                                    (code.clone(), namount as i32 as f64)
+                                },
                                 _ => (code.clone(), amount),
                             }
                         }
