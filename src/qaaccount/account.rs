@@ -1,4 +1,3 @@
-
 use crate::qaaccount::marketpreset::{CodePreset, MarketPreset};
 use crate::qaaccount::order::QAOrder;
 use crate::qaaccount::position::{adjust_market, QA_Frozen, QA_Postions};
@@ -986,8 +985,8 @@ impl QA_Account {
         _order_id: &str,
         price_type: &str,
     ) -> Result<QAOrder, ()> {
-        if amount==0.0{
-            return Err(())
+        if amount == 0.0 {
+            return Err(());
         }
         self.event_id += 1;
         let datetimer = if time.len() == 10 {
@@ -1366,44 +1365,48 @@ impl QA_Account {
         slice: &HashMap<String, Kline>,
         label: &str,
     ) {
-        let total_money = self.get_balance()*0.998;
+        let total_money = self.get_balance() * 0.998;
         //println!("twa: totalmoney {:#?} balance {:#?}",total_money,self.get_balance());
         let res = target_panel
             .clone()
             .par_iter()
             .map(|(code, weight)| {
-                let kline = slice.get(code);//.unwrap();
+                let kline = slice.get(code); //.unwrap();
                 if kline.is_none() {
                     println!("can not find kline for {} {}", code, self.time);
                     (code.clone(), 0.0)
-                }else{
+                } else {
                     let data = kline.unwrap();
                     match label {
                         "close" => {
                             let price = data.close;
-                            let mut  amount = (total_money * weight) / price;
+                            let mut amount = (total_money * weight) / price;
                             match adjust_market(code).as_ref() {
-                                "stock_cn" => (code.clone(), (amount / 100.0) as i32 as f64 * 100.0),
+                                "stock_cn" => {
+                                    (code.clone(), (amount / 100.0) as i32 as f64 * 100.0)
+                                }
                                 "future_cn" => {
                                     let preset: CodePreset = MarketPreset::new().get(code.as_ref());
-                                    amount = (amount /preset.unit_table  as f64) ;
+                                    amount = (amount / preset.unit_table as f64);
 
                                     (code.clone(), amount as i32 as f64)
-                                },
+                                }
                                 _ => (code.clone(), amount),
                             }
                         }
                         "open" => {
                             let price = data.open;
-                            let  amount = (total_money * weight) / price;
+                            let amount = (total_money * weight) / price;
                             match adjust_market(code).as_ref() {
-                                "stock_cn" => (code.clone(), (amount / 100.0) as i32 as f64 * 100.0),
+                                "stock_cn" => {
+                                    (code.clone(), (amount / 100.0) as i32 as f64 * 100.0)
+                                }
                                 "future_cn" => {
                                     let preset: CodePreset = MarketPreset::new().get(code.as_ref());
-                                    let namount = amount/(preset.unit_table  as f64);
+                                    let namount = amount / (preset.unit_table as f64);
                                     //println!("future {:#?} amount {:#?}", code,amount);
                                     (code.clone(), namount as i32 as f64)
-                                },
+                                }
                                 _ => (code.clone(), amount),
                             }
                         }
@@ -1414,8 +1417,6 @@ impl QA_Account {
                         }
                     }
                 }
-
-               
             })
             .collect::<HashMap<String, f64>>();
         self.pre_target_weight_for_close(res, slice, label, target_panel);
@@ -1552,7 +1553,7 @@ impl QA_Account {
             .clone()
             .par_iter()
             .for_each_with(sender, |s, (code, target)| {
-                let kline = slice.get(code);//.unwrap();
+                let kline = slice.get(code); //.unwrap();
                 if kline.is_none() {
                     println!("code {} is not in data", code);
                 } else {
@@ -1828,15 +1829,14 @@ impl QA_Account {
         slice: &HashMap<String, Kline>,
         label: &str,
     ) {
-        
-        let total_money = self.get_balance()*0.998; //#.clone();
-        //println!("twp: totalmoney {:#?} balance {:#?}",total_money,self.get_balance());
-        //println!("pre_target_for_open {:#?}, time {:#?}", target_panel, self.time);
+        let total_money = self.get_balance() * 0.998; //#.clone();
+                                                      //println!("twp: totalmoney {:#?} balance {:#?}",total_money,self.get_balance());
+                                                      //println!("pre_target_for_open {:#?}, time {:#?}", target_panel, self.time);
         let res_adjust = target_panel
             .clone()
             .par_iter()
             .map(|(code, weight)| {
-                let kline = slice.get(code);//
+                let kline = slice.get(code); //
                 if kline.is_none() {
                     (code.clone(), 0.0)
                 } else {
@@ -1846,13 +1846,15 @@ impl QA_Account {
                             let price = data.close;
                             let amount = (total_money * weight) / price;
                             match adjust_market(code).as_ref() {
-                                "stock_cn" => (code.clone(), ((amount / 100.0) as i32) as f64 * 100.0),
-                                "future_cn" =>{
+                                "stock_cn" => {
+                                    (code.clone(), ((amount / 100.0) as i32) as f64 * 100.0)
+                                }
+                                "future_cn" => {
                                     let preset: CodePreset = MarketPreset::new().get(code.as_ref());
-                                    let namount = amount/(preset.unit_table  as f64);
+                                    let namount = amount / (preset.unit_table as f64);
                                     //println!("future {:#?} amount {:#?}", code,amount);
                                     (code.clone(), namount as i32 as f64)
-                                },
+                                }
                                 _ => (code.clone(), amount),
                             }
                         }
@@ -1860,13 +1862,15 @@ impl QA_Account {
                             let price = data.open;
                             let amount = (total_money * weight) / price;
                             match adjust_market(code).as_ref() {
-                                "stock_cn" => (code.clone(), ((amount / 100.0) as i32) as f64 * 100.0),
+                                "stock_cn" => {
+                                    (code.clone(), ((amount / 100.0) as i32) as f64 * 100.0)
+                                }
                                 "future_cn" => {
                                     let preset: CodePreset = MarketPreset::new().get(code.as_ref());
-                                    let namount = amount/(preset.unit_table  as f64);
+                                    let namount = amount / (preset.unit_table as f64);
                                     //println!("future {:#?} amount {:#?}", code,amount);
                                     (code.clone(), namount as i32 as f64)
-                                },
+                                }
                                 _ => (code.clone(), amount),
                             }
                         }
@@ -1893,7 +1897,6 @@ impl QA_Account {
                     println!("code error");
                 } else {
                     let current_data = kline.unwrap();
-
 
                     let posx = self.get_position_unmut(code);
                     let amount = target.clone();
@@ -2187,7 +2190,7 @@ impl QA_Account {
                     };
 
                     let volume_market_limit = match adjust_market(code).as_ref() {
-                        "stock_cn" => 100.0 * (current_data.volume * 0.0025) as i32  as f64,
+                        "stock_cn" => 100.0 * (current_data.volume * 0.0025) as i32 as f64,
                         "future_cn" => (current_data.volume * 0.25) as i32 as f64,
                         _ => {
                             println!("market error, use 100");

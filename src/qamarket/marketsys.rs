@@ -191,7 +191,6 @@ impl QAMarket {
         }
     }
 
-
     #[allow(unused_must_use)]
     pub fn target(
         &mut self,
@@ -295,8 +294,6 @@ impl QAMarket {
 
             acc.settle()
         });
-
-
     }
 }
 

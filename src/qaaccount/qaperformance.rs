@@ -128,7 +128,6 @@ impl QAPerformance_Single {
                 };
                 let u = self.temp.get_mut(raw_direction).unwrap();
 
-
                 let mut codeset = self.market_set.get(trade.instrument_id.as_ref());
 
                 let f = u.get_mut(0).unwrap();
@@ -368,7 +367,6 @@ mod tests {
 
         acc.sell_close(code, 5.0, "2020-01-21 14:52:00", 3420.0);
 
-
         println!("{:#?}", p.pair);
         println!("{}", p.get_totalprofit())
     }
@@ -390,11 +388,9 @@ mod tests {
 
         acc.sell_close(code, 2000.0, "2020-04-03 14:52:00", 47.17);
 
-
         for (_, i) in acc.dailytrades.iter_mut() {
             println!("{:#?}", i);
             let ux: Trade = i.to_owned();
-
 
             println!(
                 "{:#?}",
