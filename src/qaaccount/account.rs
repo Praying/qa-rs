@@ -363,7 +363,18 @@ impl QA_Account {
         weight.insert("cash".to_string(), self.money / balance);
         weight
     }
+    pub fn get_account_pos_longshort(&mut self) -> HashMap<String, f64> {
+        let mut longshort: HashMap<String, f64> = HashMap::new();
+        //let balance = self.get_balance();
+        for pos in self.hold.values_mut() {
+            longshort.insert(
+                pos.instrument_id.clone(),
+                pos.volume_long() - pos.volume_short()
+            );
+        }
 
+        longshort
+    }
     /// 创建QIFI的账户切片， 注意他是一个结构体
     pub fn get_qifi_slice(&mut self) -> QIFI {
         let mut pos: HashMap<String, Position> = HashMap::new();

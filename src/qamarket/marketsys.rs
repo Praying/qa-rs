@@ -575,6 +575,15 @@ impl QAMarket {
         }
     }
 
+    #[pyo3(name = "get_pos_longshort")]
+    pub fn py_get_pos_longshort(&mut self, account_name: &str) -> PyResult<HashMap<String, f64>> {
+        if self.cache.contains_key(account_name) {
+            Ok(self.get_account(account_name).get_account_pos_longshort())
+        } else {
+            Err(PyErr::new::<PyTypeError, _>("Error message"))
+        }
+    }
+
     #[pyo3(name = "get_daily_pos")]
     pub fn py_get_daily_pos(&mut self, account_name: &str) -> PyResult<String> {
         if self.cache.contains_key(account_name) {
