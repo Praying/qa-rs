@@ -427,7 +427,7 @@ impl QA_Postions {
                 self.open_cost_short += temp_cost;
                 self.position_cost_short += temp_cost;
             }
-            3 => {
+            3 |4 => {
                 // buyclose logic
                 //self.volume_short_today -= amount;
                 // 有昨仓先平昨仓
@@ -489,7 +489,7 @@ impl QA_Postions {
                 } else {
                 }
             }
-            -3 => {
+            -3 | -4 => {
                 // sell close logic
                 //self.volume_long_today -= amount;
 

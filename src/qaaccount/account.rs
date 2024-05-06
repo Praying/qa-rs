@@ -367,10 +367,12 @@ impl QA_Account {
         let mut longshort: HashMap<String, f64> = HashMap::new();
         //let balance = self.get_balance();
         for pos in self.hold.values_mut() {
-            longshort.insert(
-                pos.instrument_id.clone(),
-                pos.volume_long() - pos.volume_short()
-            );
+            if (pos.volume_long() - pos.volume_short() )!=0.0{
+                longshort.insert(
+                    pos.instrument_id.clone(),
+                    pos.volume_long() - pos.volume_short()
+                );
+            }
         }
 
         longshort
@@ -778,7 +780,7 @@ impl QA_Account {
                     );
                     return Ok(order);
                 } else {
-                    warn!("仓位不足");
+                    println!("BUY CLOSE 仓位不足 amount {:#?} pos {:#?} ",amount, qapos);
                     return Err(());
                 }
             }
@@ -798,7 +800,7 @@ impl QA_Account {
                     );
                     return Ok(order);
                 } else {
-                    warn!("今日仓位不足");
+                    println!("BUY CLOSETODAY 仓位不足 amount {:#?} pos {:#?} ",amount, qapos);
                     return Err(());
                 }
             }
@@ -819,7 +821,7 @@ impl QA_Account {
                     );
                     return Ok(order);
                 } else {
-                    warn!("SELL CLOSE 仓位不足");
+                    println!("SELL 仓位不足 amount {:#?} pos {:#?} ",amount, qapos);
                     return Err(());
                 }
             }
@@ -840,13 +842,14 @@ impl QA_Account {
                     );
                     return Ok(order);
                 } else {
-                    warn!("SELL CLOSE 仓位不足");
+                    println!("SELL CLOSE 仓位不足 amount {:#?} pos {:#?} ",amount, qapos);
                     return Err(());
                 }
             }
 
             -4 => {
-                if (qapos.volume_long_today - qapos.volume_short_frozen_today) >= amount {
+                //println!("sellclose amount {:#?} pos {:#?} ",amount, qapos);
+                if (qapos.volume_long_today - qapos.volume_long_frozen_today) >= amount {
                     qapos.volume_long_frozen_today += amount;
                     qapos.volume_long_today -= amount;
                     let order = QAOrder::new(
@@ -861,6 +864,7 @@ impl QA_Account {
                     );
                     return Ok(order);
                 } else {
+                    println!("SELL CLOSETODAY 仓位不足 amount {:#?} pos {:#?} ",amount, qapos);
                     return Err(());
                 }
             }
@@ -1764,6 +1768,22 @@ impl QA_Account {
                             self.buy_close(code, amount_adj, &today.clone(), *price);
                         }
                     }
+                    &"buy_closetoday" => {
+                        if price >= limit {
+                            // println!(
+                            //     "errorlog:{:#?} buyclose  highlimit {:#?}/{:#?}/{:#?}/{:#?}/{:#?}/",
+                            //     today.clone(),
+                            //     code,    //code
+                            //     price,   //price
+                            //     amount,  //amount
+                            //     *action, //order_type
+                            //     limit    //limit
+                            // );
+                        } else {
+                            let amount_adj = amount.min(*market_vol_limit);
+                            self.buy_closetoday(code, amount_adj, &today.clone(), *price);
+                        }
+                    }
                     &"sell_close" => {
                         if price <= limit {
                             // println!(
@@ -1778,6 +1798,22 @@ impl QA_Account {
                         } else {
                             let amount_adj = amount.min(*market_vol_limit);
                             self.sell_close(code, amount_adj, &today.clone(), *price);
+                        }
+                    }
+                    &"sell_closetoday" => {
+                        if price <= limit {
+                            // println!(
+                            //     "errorlog:{:#?} sellclose  lowlimit {:#?}/{:#?}/{:#?}/{:#?}/{:#?}/",
+                            //     today.clone(),
+                            //     code,    //code
+                            //     price,   //price
+                            //     amount,  //amount
+                            //     *action, //order_type
+                            //     limit
+                            // );
+                        } else {
+                            let amount_adj = amount.min(*market_vol_limit);
+                            self.sell_closetoday(code, amount_adj, &today.clone(), *price);
                         }
                     }
                     _ => {}
@@ -2210,14 +2246,26 @@ impl QA_Account {
                     };
 
                     if pos.volume_long_his > 0.0 {
-                        s.send((
-                            code.to_owned(),
-                            price,
-                            pos.volume_long_his,
-                            "sell_close",
-                            current_data.limit_down,
-                            volume_market_limit,
-                        ));
+                        if pos.volume_long_today>=0.0{
+                            s.send((
+                                code.to_owned(),
+                                price,
+                                pos.volume_long_his,
+                                "sell_close",
+                                current_data.limit_down,
+                                volume_market_limit,
+                            ));
+                        }else{
+                            s.send((
+                                code.to_owned(),
+                                price,
+                                pos.volume_long_his + pos.volume_long_today,
+                                "sell_close",
+                                current_data.limit_down,
+                                volume_market_limit,
+                            ));
+                        }
+
                     }
                     if pos.volume_long_today > 0.0 {
                         s.send((
@@ -2230,14 +2278,26 @@ impl QA_Account {
                         ));
                     }
                     if pos.volume_short_his > 0.0 {
-                        s.send((
-                            code.to_owned(),
-                            price,
-                            pos.volume_short_his,
-                            "buy_close",
-                            current_data.limit_up,
-                            volume_market_limit,
-                        ));
+                        if pos.volume_short_today>=0.0{
+                            s.send((
+                                code.to_owned(),
+                                price,
+                                pos.volume_short_his,
+                                "buy_close",
+                                current_data.limit_up,
+                                volume_market_limit,
+                            ));
+                        }else{
+                            s.send((
+                                code.to_owned(),
+                                price,
+                                pos.volume_short_his + pos.volume_short_today,
+                                "buy_close",
+                                current_data.limit_up,
+                                volume_market_limit,
+                            ));
+                        }
+
                     }
                     if pos.volume_short_today > 0.0 {
                         s.send((
@@ -2452,6 +2512,22 @@ impl QA_Account {
                             self.buy_close(code, amount_adj, &today.clone(), *price);
                         }
                     }
+                    &"buy_closetoday" => {
+                        if price >= limit {
+                            // println!(
+                            //     "errorlog:{:#?} buyclose  highlimit {:#?}/{:#?}/{:#?}/{:#?}/{:#?}/",
+                            //     today.clone(),
+                            //     code,    //code
+                            //     price,   //price
+                            //     amount,  //amount
+                            //     *action, //order_type
+                            //     limit    //limit
+                            // );
+                        } else {
+                            let amount_adj = amount.min(*market_vol_limit);
+                            self.buy_closetoday(code, amount_adj, &today.clone(), *price);
+                        }
+                    }
                     &"sell_close" => {
                         if price <= limit {
                             // println!(
@@ -2466,6 +2542,22 @@ impl QA_Account {
                         } else {
                             let amount_adj = amount.min(*market_vol_limit);
                             self.sell_close(code, amount_adj, &today.clone(), *price);
+                        }
+                    }
+                    &"sell_closetoday" => {
+                        if price <= limit {
+                            // println!(
+                            //     "errorlog:{:#?} sellclose  lowlimit {:#?}/{:#?}/{:#?}/{:#?}/{:#?}/",
+                            //     today.clone(),
+                            //     code,    //code
+                            //     price,   //price
+                            //     amount,  //amount
+                            //     *action, //order_type
+                            //     limit
+                            // );
+                        } else {
+                            let amount_adj = amount.min(*market_vol_limit);
+                            self.sell_closetoday(code, amount_adj, &today.clone(), *price);
                         }
                     }
                     _ => {}
