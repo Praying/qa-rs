@@ -39,7 +39,9 @@ impl CodePreset {
             0.0
         }
     }
-
+    pub fn calc_sellopencoeff(&mut self) -> f64 {
+        self.sell_frozen_coeff.clone() * self.unit_table.clone() as f64
+    }
     pub fn calc_commission_today(&mut self, price: f64, volume: f64) -> f64 {
         self.commission_coeff_today_pervol.clone() * volume.clone()
             + self.commission_coeff_today_peramount.clone()
@@ -976,7 +978,7 @@ impl MarketPreset {
                 exchange: "CFFEX".to_string(),
                 commission_coeff_peramount: 2.301e-05,
                 commission_coeff_pervol: 0.0,
-                commission_coeff_today_peramount: 0.00034501,
+                commission_coeff_today_peramount: 0.00023,
                 commission_coeff_today_pervol: 0.0,
             },
         );
@@ -991,7 +993,7 @@ impl MarketPreset {
                 exchange: "CFFEX".to_string(),
                 commission_coeff_peramount: 2.301e-05,
                 commission_coeff_pervol: 0.0,
-                commission_coeff_today_peramount: 0.00034501,
+                commission_coeff_today_peramount: 0.00023,
                 commission_coeff_today_pervol: 0.0,
             },
         );
@@ -1006,7 +1008,7 @@ impl MarketPreset {
                 exchange: "CFFEX".to_string(),
                 commission_coeff_peramount: 2.301e-05,
                 commission_coeff_pervol: 0.0,
-                commission_coeff_today_peramount: 0.0001,
+                commission_coeff_today_peramount: 0.00023,
                 commission_coeff_today_pervol: 0.0,
             },
         );
@@ -1021,7 +1023,7 @@ impl MarketPreset {
                 exchange: "CFFEX".to_string(),
                 commission_coeff_peramount: 2.301e-05,
                 commission_coeff_pervol: 0.0,
-                commission_coeff_today_peramount: 0.00034501,
+                commission_coeff_today_peramount: 0.00023,
                 commission_coeff_today_pervol: 0.0,
             },
         );
@@ -1029,15 +1031,15 @@ impl MarketPreset {
             "T".to_string(),
             CodePreset {
                 name: "10年期国债".to_string(),
-                unit_table: 1000000,
+                unit_table: 10000,
                 price_tick: 0.005,
-                buy_frozen_coeff: 0.02,
-                sell_frozen_coeff: 0.02,
+                buy_frozen_coeff: 0.03,
+                sell_frozen_coeff: 0.03,
                 exchange: "CFFEX".to_string(),
-                commission_coeff_peramount: 0.0001,
-                commission_coeff_pervol: 0.0,
-                commission_coeff_today_peramount: 0.0001,
-                commission_coeff_today_pervol: 0.0,
+                commission_coeff_peramount: 0.0,
+                commission_coeff_pervol: 3.0,
+                commission_coeff_today_peramount: 0.0,
+                commission_coeff_today_pervol: 3.0,
             },
         );
         market_preset.insert(
@@ -1046,13 +1048,13 @@ impl MarketPreset {
                 name: "5年期国债".to_string(),
                 unit_table: 10000,
                 price_tick: 0.005,
-                buy_frozen_coeff: 0.012,
-                sell_frozen_coeff: 0.012,
+                buy_frozen_coeff: 0.02,
+                sell_frozen_coeff: 0.02,
                 exchange: "CFFEX".to_string(),
-                commission_coeff_peramount: 0.0001,
-                commission_coeff_pervol: 0.0,
-                commission_coeff_today_peramount: 0.0001,
-                commission_coeff_today_pervol: 0.0,
+                commission_coeff_peramount: 0.0,
+                commission_coeff_pervol: 3.0,
+                commission_coeff_today_peramount: 0.0,
+                commission_coeff_today_pervol: 3.0,
             },
         );
         market_preset.insert(
@@ -1060,29 +1062,29 @@ impl MarketPreset {
             CodePreset {
                 name: "2年期国债".to_string(),
                 unit_table: 20000,
-                price_tick: 0.005,
-                buy_frozen_coeff: 0.005,
-                sell_frozen_coeff: 0.005,
+                price_tick: 0.002,
+                buy_frozen_coeff: 0.01,
+                sell_frozen_coeff: 0.01,
                 exchange: "CFFEX".to_string(),
-                commission_coeff_peramount: 0.0001,
-                commission_coeff_pervol: 0.0,
-                commission_coeff_today_peramount: 0.0001,
-                commission_coeff_today_pervol: 0.0,
+                commission_coeff_peramount: 0.0,
+                commission_coeff_pervol: 3.0,
+                commission_coeff_today_peramount: 0.0,
+                commission_coeff_today_pervol: 3.0,
             },
         );
         market_preset.insert(
             "TL".to_string(),
             CodePreset {
                 name: "30年期国债".to_string(),
-                unit_table: 20000,
-                price_tick: 0.005,
-                buy_frozen_coeff: 0.005,
-                sell_frozen_coeff: 0.005,
+                unit_table: 10000,
+                price_tick: 0.01,
+                buy_frozen_coeff: 0.05,
+                sell_frozen_coeff: 0.05,
                 exchange: "CFFEX".to_string(),
-                commission_coeff_peramount: 0.0001,
-                commission_coeff_pervol: 0.0,
-                commission_coeff_today_peramount: 0.0001,
-                commission_coeff_today_pervol: 0.0,
+                commission_coeff_peramount: 0.0,
+                commission_coeff_pervol: 3.0,
+                commission_coeff_today_peramount: 0.0,
+                commission_coeff_today_pervol: 3.0,
             },
         );
         market_preset.insert(
