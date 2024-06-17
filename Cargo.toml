@@ -55,7 +55,7 @@ chrono-tz= { version = "0.5.3", features = ["serde"] }
 chrono = { version = "0.4.19", features = ["serde"] }
 pyo3 = { version = "0.17.3", features = ["hashbrown", "extension-module", "multiple-pymethods"] }
 pyo3-chrono = "0.5.0"
-
+time = "0.3.36"
 thiserror = "1.0"
 rand = "0.7"
 quadprog = "0.0.1"
