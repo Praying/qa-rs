@@ -255,8 +255,8 @@ impl QA_Postions {
         self.volume_short_frozen_today = 0.0;
         self.position_price_long = self.lastest_price;
         self.position_price_short = self.lastest_price;
-        self.position_cost_long = self.position_price_long * self.volume_long();
-        self.position_cost_short = self.position_price_short * self.volume_short();
+        self.position_cost_long = self.position_price_long * self.volume_long() * self.preset.unit_table as f64;
+        self.position_cost_short = self.position_price_short * self.volume_short()* self.preset.unit_table as f64;
         self.position_profit_closetoday = 0.0;
     }
 
