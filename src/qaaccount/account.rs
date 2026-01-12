@@ -540,7 +540,7 @@ impl QA_Account {
         let balance_settle = self.get_balance();
         //self.accounts.pre_balance + self.accounts.close_profit - self.accounts.commission;
         let static_balance =
-            self.accounts.static_balance + self.accounts.close_profit - self.accounts.commission;
+            self.accounts.static_balance + self.accounts.deposit - self.accounts.withdraw + self.accounts.close_profit - self.accounts.commission;
         self.accounts = account {
             user_id: self.account_cookie.to_string(),
             currency: "CNY".to_string(),
@@ -663,6 +663,7 @@ impl QA_Account {
         let pos = self.get_position(code).unwrap();
         let money = pos.volume_long_his * money_ratio;
         self.money += money;
+        self.accounts.deposit += money * 0.8; // 扣减分红税20%
         self.events.insert(
             self.time.clone(),
             format!(

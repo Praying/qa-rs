@@ -375,12 +375,13 @@ impl QA_Postions {
     pub fn split_event(&mut self, ratio: f64) -> f64 {
         // 送转股事件, 仅限股票, 仅修改持仓并修改开仓成本
         let amount = self.volume_long_his * ratio;
-        self.volume_long_his += amount;
         self.open_price_long =
-            (self.open_price_long * self.volume_long() + amount) / (self.volume_long() + amount);
+            (self.open_price_long * self.volume_long()) / (self.volume_long() + amount);
+        self.volume_long_his += amount;
         self.position_price_long = self.open_price_long;
         amount
     }
+    
     pub fn update_pos(&mut self, price: f64, amount: f64, towards: i32) -> (f64, f64) {
         // when update_pos // calc commission fee
         let temp_cost = self.preset.calc_marketvalue(price, amount);
