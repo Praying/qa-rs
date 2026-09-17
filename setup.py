@@ -19,5 +19,5 @@ setup(
     include_package_data=True,
     python_requires = ">=3.7",
     requires=['orjson', 'emprical'],
-    version="0.0.13"
+    version="0.0.14"
 )

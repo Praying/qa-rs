@@ -1,5 +1,5 @@
 /target
-
+/tasks
 qars_core.egg-info/
 __pycache__/
 *.pyd

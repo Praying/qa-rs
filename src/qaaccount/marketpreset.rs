@@ -117,7 +117,7 @@ impl MarketPreset {
             CodePreset {
                 name: "石油沥青".to_string(),
                 unit_table: 10,
-                price_tick: 2.0,
+                price_tick: 1.0,
                 buy_frozen_coeff: 0.15,
                 sell_frozen_coeff: 0.15,
                 exchange: "SHFE".to_string(),
@@ -386,8 +386,8 @@ impl MarketPreset {
             "FB".to_string(),
             CodePreset {
                 name: "中密度纤维板".to_string(),
-                unit_table: 500,
-                price_tick: 0.05,
+                unit_table: 10,
+                price_tick: 0.5,
                 buy_frozen_coeff: 0.2,
                 sell_frozen_coeff: 0.2,
                 exchange: "DCE".to_string(),
@@ -462,7 +462,7 @@ impl MarketPreset {
             CodePreset {
                 name: "线型低密度聚乙烯".to_string(),
                 unit_table: 5,
-                price_tick: 5.0,
+                price_tick: 1.0,
                 buy_frozen_coeff: 0.05,
                 sell_frozen_coeff: 0.05,
                 exchange: "DCE".to_string(),
@@ -492,7 +492,7 @@ impl MarketPreset {
             CodePreset {
                 name: "棕榈油".to_string(),
                 unit_table: 10,
-                price_tick: 2.0,
+                price_tick: 1.0,
                 buy_frozen_coeff: 0.08,
                 sell_frozen_coeff: 0.08,
                 exchange: "DCE".to_string(),
@@ -522,7 +522,7 @@ impl MarketPreset {
             CodePreset {
                 name: "聚氯乙烯".to_string(),
                 unit_table: 5,
-                price_tick: 5.0,
+                price_tick: 1.0,
                 buy_frozen_coeff: 0.05,
                 sell_frozen_coeff: 0.05,
                 exchange: "DCE".to_string(),
@@ -537,7 +537,7 @@ impl MarketPreset {
             CodePreset {
                 name: "豆油".to_string(),
                 unit_table: 10,
-                price_tick: 2.0,
+                price_tick: 1.0,
                 buy_frozen_coeff: 0.05,
                 sell_frozen_coeff: 0.05,
                 exchange: "DCE".to_string(),
@@ -1092,7 +1092,7 @@ impl MarketPreset {
             CodePreset {
                 name: "短纤".to_string(),
                 unit_table: 5,
-                price_tick: 1.0,
+                price_tick: 2.0,
                 buy_frozen_coeff: 0.2,
                 sell_frozen_coeff: 0.2,
                 exchange: "CZCE".to_string(),
@@ -1107,7 +1107,7 @@ impl MarketPreset {
             CodePreset {
                 name: "国际铜".to_string(),
                 unit_table: 5,
-                price_tick: 1.0,
+                price_tick: 10.0,
                 buy_frozen_coeff: 0.2,
                 sell_frozen_coeff: 0.2,
                 exchange: "INE".to_string(),
@@ -1122,7 +1122,7 @@ impl MarketPreset {
             CodePreset {
                 name: "生猪".to_string(),
                 unit_table: 16,
-                price_tick: 1.0,
+                price_tick: 5.0,
                 buy_frozen_coeff: 0.2,
                 sell_frozen_coeff: 0.2,
                 exchange: "DCE".to_string(),
@@ -1138,7 +1138,7 @@ impl MarketPreset {
             CodePreset {
                 name: "花生仁".to_string(),
                 unit_table: 5,
-                price_tick: 1.0,
+                price_tick: 2.0,
                 buy_frozen_coeff: 0.2,
                 sell_frozen_coeff: 0.2,
                 exchange: "CZCE".to_string(),
@@ -1153,7 +1153,7 @@ impl MarketPreset {
             CodePreset {
                 name: "工业硅".to_string(),
                 unit_table: 5,
-                price_tick: 1.0,
+                price_tick: 5.0,
                 buy_frozen_coeff: 0.2,
                 sell_frozen_coeff: 0.2,
                 exchange: "GFEX".to_string(),
@@ -1166,7 +1166,7 @@ impl MarketPreset {
         market_preset.insert(
             "AO".to_string(),
             CodePreset {
-                name: "ao".to_string(),
+                name: "氧化铝".to_string(),
                 unit_table: 20,
                 price_tick: 1.0,
                 buy_frozen_coeff: 0.2,
@@ -1184,7 +1184,7 @@ impl MarketPreset {
             CodePreset {
                 name: "碳酸锂".to_string(),
                 unit_table: 1,
-                price_tick: 1.0,
+                price_tick: 20.0,
                 buy_frozen_coeff: 0.2,
                 sell_frozen_coeff: 0.2,
                 exchange: "GFEX".to_string(),
@@ -1198,9 +1198,9 @@ impl MarketPreset {
         market_preset.insert(
             "BR".to_string(),
             CodePreset {
-                name: "br".to_string(),
+                name: "丁二烯橡胶".to_string(),
                 unit_table: 5,
-                price_tick: 1.0,
+                price_tick: 5.0,
                 buy_frozen_coeff: 0.2,
                 sell_frozen_coeff: 0.2,
                 exchange: "SHFE".to_string(),
@@ -1214,9 +1214,9 @@ impl MarketPreset {
         market_preset.insert(
             "EC".to_string(),
             CodePreset {
-                name: "ec".to_string(),
+                name: "集运指数(欧线)".to_string(),
                 unit_table: 50,
-                price_tick: 1.0,
+                price_tick: 0.5,
                 buy_frozen_coeff: 0.22,
                 sell_frozen_coeff: 0.22,
                 exchange: "INE".to_string(),
@@ -1232,7 +1232,7 @@ impl MarketPreset {
             CodePreset {
                 name: "对二甲苯".to_string(),
                 unit_table: 5,
-                price_tick: 1.0,
+                price_tick: 2.0,
                 buy_frozen_coeff: 0.12,
                 sell_frozen_coeff: 0.12,
                 exchange: "CZCE".to_string(),
@@ -1255,6 +1255,151 @@ impl MarketPreset {
                 commission_coeff_peramount: 0.000101,
                 commission_coeff_pervol: 0.0,
                 commission_coeff_today_peramount: 0.000101,
+                commission_coeff_today_pervol: 0.0,
+            },
+        );
+
+        // 以下为 RQData 主力合约交易所标准参数 (截至 2026-09-17)
+        market_preset.insert(
+            "AD".to_string(),
+            CodePreset {
+                name: "铸造铝合金".to_string(),
+                unit_table: 10,
+                price_tick: 5.0,
+                buy_frozen_coeff: 0.1,
+                sell_frozen_coeff: 0.1,
+                exchange: "SHFE".to_string(),
+                commission_coeff_peramount: 0.00005,
+                commission_coeff_pervol: 0.0,
+                commission_coeff_today_peramount: 0.0,
+                commission_coeff_today_pervol: 0.0,
+            },
+        );
+
+        market_preset.insert(
+            "OP".to_string(),
+            CodePreset {
+                name: "胶版印刷纸".to_string(),
+                unit_table: 40,
+                price_tick: 2.0,
+                buy_frozen_coeff: 0.07,
+                sell_frozen_coeff: 0.07,
+                exchange: "SHFE".to_string(),
+                commission_coeff_peramount: 0.00002,
+                commission_coeff_pervol: 0.0,
+                commission_coeff_today_peramount: 0.0,
+                commission_coeff_today_pervol: 0.0,
+            },
+        );
+
+        market_preset.insert(
+            "LG".to_string(),
+            CodePreset {
+                name: "原木".to_string(),
+                unit_table: 90,
+                price_tick: 0.5,
+                buy_frozen_coeff: 0.06,
+                sell_frozen_coeff: 0.06,
+                exchange: "DCE".to_string(),
+                commission_coeff_peramount: 0.00003,
+                commission_coeff_pervol: 0.0,
+                commission_coeff_today_peramount: 0.00003,
+                commission_coeff_today_pervol: 0.0,
+            },
+        );
+
+        market_preset.insert(
+            "BZ".to_string(),
+            CodePreset {
+                name: "纯苯".to_string(),
+                unit_table: 30,
+                price_tick: 1.0,
+                buy_frozen_coeff: 0.07,
+                sell_frozen_coeff: 0.07,
+                exchange: "DCE".to_string(),
+                commission_coeff_peramount: 0.0,
+                commission_coeff_pervol: 3.0,
+                commission_coeff_today_peramount: 0.0,
+                commission_coeff_today_pervol: 3.0,
+            },
+        );
+
+        market_preset.insert(
+            "PL".to_string(),
+            CodePreset {
+                name: "丙烯".to_string(),
+                unit_table: 20,
+                price_tick: 1.0,
+                buy_frozen_coeff: 0.07,
+                sell_frozen_coeff: 0.07,
+                exchange: "CZCE".to_string(),
+                commission_coeff_peramount: 0.0,
+                commission_coeff_pervol: 3.0,
+                commission_coeff_today_peramount: 0.0,
+                commission_coeff_today_pervol: 0.0,
+            },
+        );
+
+        market_preset.insert(
+            "PR".to_string(),
+            CodePreset {
+                name: "瓶级聚酯切片".to_string(),
+                unit_table: 15,
+                price_tick: 2.0,
+                buy_frozen_coeff: 0.07,
+                sell_frozen_coeff: 0.07,
+                exchange: "CZCE".to_string(),
+                commission_coeff_peramount: 0.00005,
+                commission_coeff_pervol: 0.0,
+                commission_coeff_today_peramount: 0.0,
+                commission_coeff_today_pervol: 0.0,
+            },
+        );
+
+        market_preset.insert(
+            "PS".to_string(),
+            CodePreset {
+                name: "多晶硅".to_string(),
+                unit_table: 3,
+                price_tick: 5.0,
+                buy_frozen_coeff: 0.13,
+                sell_frozen_coeff: 0.13,
+                exchange: "GFEX".to_string(),
+                commission_coeff_peramount: 0.0001,
+                commission_coeff_pervol: 0.0,
+                commission_coeff_today_peramount: 0.00025,
+                commission_coeff_today_pervol: 0.0,
+            },
+        );
+
+        market_preset.insert(
+            "PT".to_string(),
+            CodePreset {
+                name: "铂".to_string(),
+                unit_table: 1000,
+                price_tick: 0.05,
+                buy_frozen_coeff: 0.16,
+                sell_frozen_coeff: 0.16,
+                exchange: "GFEX".to_string(),
+                commission_coeff_peramount: 0.0001,
+                commission_coeff_pervol: 0.0,
+                commission_coeff_today_peramount: 0.0,
+                commission_coeff_today_pervol: 0.0,
+            },
+        );
+
+        market_preset.insert(
+            "PD".to_string(),
+            CodePreset {
+                name: "钯".to_string(),
+                unit_table: 1000,
+                price_tick: 0.05,
+                buy_frozen_coeff: 0.16,
+                sell_frozen_coeff: 0.16,
+                exchange: "GFEX".to_string(),
+                commission_coeff_peramount: 0.0001,
+                commission_coeff_pervol: 0.0,
+                commission_coeff_today_peramount: 0.0,
                 commission_coeff_today_pervol: 0.0,
             },
         );
@@ -1298,5 +1443,56 @@ impl MarketPreset {
         }
 
         preset
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_new_future() {
+        // 新上市期货品种不能回落为股票预设
+        let mut market = MarketPreset::new();
+        for (code, exchange, unit_table) in [
+            ("ad2611", "SHFE", 10),
+            ("op2611", "SHFE", 40),
+            ("lg2611", "DCE", 90),
+            ("bz2611", "DCE", 30),
+            ("PL611", "CZCE", 20),
+            ("PR611", "CZCE", 15),
+            ("ps2611", "GFEX", 3),
+            ("pt2612", "GFEX", 1000),
+            ("pd2612", "GFEX", 1000),
+            ("PSL8", "GFEX", 3),
+        ] {
+            let preset = market.get(code);
+            assert_eq!(preset.exchange, exchange, "{}", code);
+            assert_eq!(preset.unit_table, unit_table, "{}", code);
+        }
+    }
+
+    #[test]
+    fn test_new_future_margin_commission() {
+        // ad 1手 @20000: 保证金 20000*10*0.1, 手续费 20000*10*0.00005
+        let mut preset = MarketPreset::new().get("ad2611");
+        assert!((preset.calc_frozenmoney(20000.0, 1.0) - 20000.0).abs() < 1e-6);
+        assert!((preset.calc_commission(20000.0, 1.0) - 10.0).abs() < 1e-6);
+        assert_eq!(preset.calc_tax(20000.0, 1.0, -1), 0.0);
+    }
+
+    #[test]
+    fn test_contract_spec() {
+        let mut market = MarketPreset::new();
+        assert_eq!(market.get("fb2611").unit_table, 10);
+        assert_eq!(market.get("fb2611").price_tick, 0.5);
+        assert_eq!(market.get("lc2701").price_tick, 20.0);
+    }
+
+    #[test]
+    fn test_new_stock() {
+        let mut market = MarketPreset::new();
+        assert_eq!(market.get("000001").exchange, "STOCK");
+        assert_eq!(market.get("600000.XSHG").exchange, "STOCK");
     }
 }
